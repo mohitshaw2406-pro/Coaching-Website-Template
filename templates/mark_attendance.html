@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/teacher_dashboard.css') }}">
+    <style>
+        .save-btn { background: #764ba2; color: white; padding: 12px 30px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 20px; touch-action: manipulation; }
+        .save-btn:hover { background: #5a3580; }
+        .fetch-btn { background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; touch-action: manipulation; }
+        .class-input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-right: 10px; font-family: inherit; }
+        .flash-success { padding: 10px 16px; margin-bottom: 15px; border-radius: 8px; background: #d4edda; color: #155724; font-weight: 600; }
+        .flash-error   { padding: 10px 16px; margin-bottom: 15px; border-radius: 8px; background: #f8d7da; color: #721c24; font-weight: 600; }
+        .att-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .att-table th { background: #764ba2; color: white; padding: 14px 18px; text-align: left; }
+        .att-table td { padding: 14px 18px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        .att-table tr:last-child td { border-bottom: none; }
+        .att-table tr:hover td { background: #faf7ff; }
+        .radio-group { display: flex; gap: 20px; align-items: center; }
+        .radio-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; font-size: 0.92rem; }
+        .radio-group input[type="radio"] { width: 18px; height: 18px; accent-color: #764ba2; cursor: pointer; }
+        .present-label { color: #16a34a; }
+        .absent-label  { color: #dc2626; }
+        .student-avatar { width: 34px; height: 34px; border-radius: 50%; background: #ede9ff; color: #6C63FF; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; }
+        .student-name-cell { display: flex; align-items: center; gap: 10px; }
+        @media (max-width: 600px) {
+            .radio-group { flex-direction: row; gap: 14px; }
+            .att-table td, .att-table th { padding: 10px 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>✦ Brilliance Academy</h2>
+            <p>Teacher Portal</p>
+        </div>
+        <div class="sidebar-nav">
+            <a href="{{ url_for('teacher_dashboard') }}"><span class="nav-icon">🏠</span> Dashboard</a>
+            <a href="{{ url_for('scan_attendance') }}"><span class="nav-icon">📷</span> Scan QR Attendance</a>
+            <a href="{{ url_for('mark_attendance') }}" style="background:rgba(108,99,255,0.85); color:white;"><span class="nav-icon">📝</span> Mark Attendance</a>
+            <a href="{{ url_for('upload_notes') }}"><span class="nav-icon">📤</span> Upload Notes</a>
+            <a href="{{ url_for('add_notice') }}"><span class="nav-icon">📢</span> Post Notice</a>
+            <a href="{{ url_for('my_students') }}"><span class="nav-icon">👥</span> My Students</a>
+            <a href="/teacher_doubts"><span class="nav-icon">❓</span> Doubts</a>
+            <a href="{{ url_for('change_password') }}"><span class="nav-icon">🔑</span> Change Password</a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout"><span class="nav-icon">🚪</span> Logout</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="page-header">
+            <h1>Mark Attendance 📝</h1>
+            <p>Enter class and mark students present or absent.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <form method="GET" style="margin-bottom: 24px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="text" name="class_name" class="class-input" placeholder="Enter Class (e.g. 10)" value="{{ selected_class or '' }}">
+            <button type="submit" class="fetch-btn">🔍 Fetch Students</button>
+        </form>
+
+        {% if students %}
+        <form method="POST">
+            <input type="hidden" name="class_name" value="{{ selected_class }}">
+            <table class="att-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student Name</th>
+                        <th>Attendance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td style="color:#9ca3c0; font-size:0.8rem;">{{ loop.index }}</td>
+                        <td>
+                            <div class="student-name-cell">
+                                <div class="student-avatar">{{ s['name'][0].upper() }}</div>
+                                <strong>{{ s['name'] }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="radio-group">
+                                <label class="present-label">
+                                    <input type="radio" name="status_{{ s['id'] }}" value="Present" checked> ✅ Present
+                                </label>
+                                <label class="absent-label">
+                                    <input type="radio" name="status_{{ s['id'] }}" value="Absent"> ❌ Absent
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="save-btn">✅ Save Attendance for Class {{ selected_class }}</button>
+        </form>
+
+        {% elif selected_class %}
+        <div style="text-align:center; padding:40px; background:white; border-radius:12px; color:#666;">
+            <p style="font-size:2rem;">🔍</p>
+            <p>No students found in Class {{ selected_class }}.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

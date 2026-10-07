@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Student Login - Brilliance Coaching Academy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Force dark mode compatibility */
+        [data-theme="dark"] .auth-card input,
+        [data-theme="dark"] .auth-card select {
+            background: var(--surface-2);
+            color: var(--text);
+            border-color: var(--border-2);
+        }
+        [data-theme="dark"] .auth-card {
+            background: var(--surface);
+            border-color: var(--border-2);
+        }
+        /* Fix mobile tap */
+        .auth-card button {
+            -webkit-appearance: none;
+            touch-action: manipulation;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>{% if 'register' in request.path %}Register{% else %}Login{% endif %}</h2>
+            <p class="subtitle">{% if 'register' in request.path %}Join Brilliance Academy 🎓{% else %}Welcome back! 👋{% endif %}</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-msg {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="">
+                {% if 'register' in request.path %}
+                    <input type="text" name="name" placeholder="Full Name" required autocomplete="name">
+                    <select name="class_name" required>
+                        <option value="">Select Class</option>
+                        {% for i in range(6, 13) %}<option value="{{ i }}">Class {{ i }}</option>{% endfor %}
+                    </select>
+                {% endif %}
+                <input type="tel" name="mobile" placeholder="Mobile Number" required autocomplete="tel">
+                <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+                <button type="submit">
+                    {% if 'register' in request.path %}Join Academy{% else %}Login{% endif %}
+                </button>
+            </form>
+
+            <p class="switch-text">
+                {% if 'register' in request.path %}
+                    Already a student? <a href="{{ url_for('login') }}">Login here</a>
+                {% else %}
+                    New here? <a href="{{ url_for('register') }}">Create account</a>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

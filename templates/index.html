@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brilliance Coaching Academy</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+/* ── HAMBURGER MENU ── */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 8px;
+    background: none;
+    border: none;
+    z-index: 300;
+}
+.hamburger span {
+    display: block;
+    width: 24px;
+    height: 2.5px;
+    background: var(--purple);
+    border-radius: 99px;
+    transition: all 0.3s;
+}
+
+/* ── MOBILE NAV OVERLAY ── */
+.mobile-nav {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,14,26,0.97);
+    z-index: 250;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.mobile-nav.open { display: flex; }
+.mobile-nav a {
+    color: #EDE9FF;
+    text-decoration: none;
+    font-size: 1.3rem;
+    font-weight: 800;
+    padding: 16px 40px;
+    border-radius: 16px;
+    width: 80%;
+    text-align: center;
+    transition: all 0.2s;
+}
+.mobile-nav a:active,
+.mobile-nav a:hover { background: rgba(168,85,247,0.2); color: #A855F7; }
+.mobile-nav .close-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: none;
+    border: none;
+    color: #EDE9FF;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+}
+.mobile-nav .login-section {
+    margin-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 16px;
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.mobile-nav .login-section p {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+/* ── DESKTOP DROPDOWN ── */
+.dropdown { position: relative; display: inline-block; }
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border-2);
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(168,85,247,0.18), 0 4px 12px rgba(0,0,0,0.06);
+    min-width: 200px;
+    overflow: hidden;
+    z-index: 200;
+}
+.dropdown-content a {
+    color: var(--text) !important;
+    padding: 12px 20px !important;
+    display: block;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.dropdown-content a:hover { background: var(--purple-light) !important; color: var(--purple) !important; padding-left: 26px !important; }
+.dropdown:hover .dropdown-content { display: block; }
+
+/* ── DARK MODE FIXES ── */
+[data-theme="dark"] .dropdown-content { background: #1A1830 !important; border-color: #3D3870 !important; }
+[data-theme="dark"] .dropdown-content a { color: #EDE9FF !important; }
+[data-theme="dark"] .dropdown-content a:hover { background: #2D1F4E !important; color: #A855F7 !important; }
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px) {
+    .navbar nav { display: none; }
+    .hamburger { display: flex; }
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile Nav Overlay -->
+<div class="mobile-nav" id="mobileNav">
+    <button class="close-btn" onclick="closeMobileNav()" aria-label="Close menu">✕</button>
+    <a href="#" onclick="closeMobileNav()">🏠 Home</a>
+    <a href="#courses" onclick="closeMobileNav()">📚 Courses</a>
+    <a href="#about" onclick="closeMobileNav()">ℹ️ About</a>
+    <a href="#contact" onclick="closeMobileNav()">📞 Contact</a>
+    <div class="login-section">
+        <p>Login As</p>
+        <a href="{{ url_for('login') }}">🎓 Student Login</a>
+        <a href="{{ url_for('teacher_login') }}">👨‍🏫 Teacher Login</a>
+        <a href="{{ url_for('admin_login') }}">🔐 Admin Login</a>
+    </div>
+</div>
+
+<header class="navbar">
+    <a href="#" class="logo" style="text-decoration:none;">🌟 Brilliance Coaching Academy</a>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#courses">Courses</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        <div class="dropdown">
+            <a href="#" class="nav-login-btn">Login ▾</a>
+            <div class="dropdown-content">
+                <a href="{{ url_for('login') }}">🎓 Student Login</a>
+                <a href="{{ url_for('teacher_login') }}">👨‍🏫 Teacher Login</a>
+                <a href="{{ url_for('admin_login') }}">🔐 Admin Login</a>
+            </div>
+        </div>
+    </nav>
+    <!-- Hamburger: only on mobile -->
+    <button class="hamburger" onclick="openMobileNav()" aria-label="Open Menu">
+        <span></span><span></span><span></span>
+    </button>
+</header>
+
+<section class="hero">
+    <div class="hero-container">
+        <div class="hero-content">
+            <div class="hero-badge">🏆 Trusted by 500+ students across Kolkata</div>
+            <h1>Build Strong Foundations.<br><span class="hero-gradient-text">Achieve Bigger Goals.</span> 🎓</h1>
+            <p>Expert coaching for Classes 6–12 in Maths, Science, AI & Computer Science — with personal attention, structured learning and a student-first approach.</p>
+            <div class="hero-btns">
+                <button class="btn-hero-primary" onclick="location.href='{{ url_for('register') }}'">🚀 Enroll Now</button>
+                <button class="btn-hero-secondary" onclick="location.href='#courses'">Explore Courses →</button>
+            </div>
+            <div class="hero-trust-tags">
+                <span class="trust-tag"><span>✓</span> Classes 6–12 CBSE & ICSE</span>
+                <span class="trust-tag"><span>✓</span> Personal Doubt Solving</span>
+                <span class="trust-tag"><span>✓</span> Smart QR Attendance</span>
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <div class="hero-card-stack">
+                <div class="hero-float-badge float-top">
+                    <span class="float-icon">⚡</span>
+                    <div>
+                        <strong>Active Learning</strong>
+                        <span>Curated Batch Sessions</span>
+                    </div>
+                </div>
+
+                <div class="hero-main-card">
+                    <div class="main-card-header">
+                        <div class="card-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="card-badge-pill">✦ Academy Highlights</span>
+                    </div>
+
+                    <div class="card-features-list">
+                        <div class="card-feature-item">
+                            <div class="feat-icon purple">📐</div>
+                            <div class="feat-info">
+                                <strong>Maths & Science Foundations</strong>
+                                <span>Concept clarity, numericals & board prep</span>
+                            </div>
+                        </div>
+
+                        <div class="card-feature-item">
+                            <div class="feat-icon pink">🤖</div>
+                            <div class="feat-info">
+                                <strong>AI & Computer Science</strong>
+                                <span>Classes 11–12 CS, IP, coding & logic</span>
+                            </div>
+                        </div>
+
+                        <div class="card-feature-item">
+                            <div class="feat-icon cyan">📲</div>
+                            <div class="feat-info">
+                                <strong>Dedicated Student Portal</strong>
+                                <span>Digital ID, timetables, notes & doubts</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer-status">
+                        <span class="pulse-indicator"></span>
+                        <span>Structured Learning • Personal Attention</span>
+                    </div>
+                </div>
+
+                <div class="hero-float-badge float-bottom">
+                    <span class="float-icon">🎯</span>
+                    <div>
+                        <strong>1-on-1 Guidance</strong>
+                        <span>Ask Doubts Anytime</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="stats">
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon-wrap purple">👨‍🎓</div>
+            <div class="stat-info">
+                <span class="stat-num">500+</span>
+                <span class="stat-label">Students Taught</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon-wrap pink">⏳</div>
+            <div class="stat-info">
+                <span class="stat-num">10+</span>
+                <span class="stat-label">Years Experience</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon-wrap green">🎯</div>
+            <div class="stat-info">
+                <span class="stat-num">95%</span>
+                <span class="stat-label">Success Rate</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon-wrap cyan">📍</div>
+            <div class="stat-info">
+                <span class="stat-num">3</span>
+                <span class="stat-label">Centres in Kolkata</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="courses" id="courses">
+    <div class="courses-header">
+        <div class="courses-badge">📖 Curriculum & Programs</div>
+        <h2>Our Courses</h2>
+        <p>Everything you need, all in one place — structured across school academics, advanced technology, and practical skill development.</p>
+    </div>
+
+    <div class="course-categories-grid">
+        <!-- CATEGORY 1: School Academics -->
+        <div class="category-card cat-academics">
+            <div class="cat-card-top">
+                <div class="cat-icon-badge">📚</div>
+                <span class="cat-pill">Foundation & Boards</span>
+            </div>
+            <h3>School Academics</h3>
+            <p class="cat-desc">Comprehensive tuition and concept clarity for school curricula.</p>
+            
+            <div class="cat-offerings">
+                <div class="offering-item">
+                    <span class="offering-dot"></span>
+                    <div class="offering-text">
+                        <strong>Classes 6–10</strong>
+                        <span>All Subjects (Maths, Science & more)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cat-card-footer">
+                <span class="cat-highlight">✦ Personalized Attention</span>
+            </div>
+        </div>
+
+        <!-- CATEGORY 2: Senior Secondary & Technology -->
+        <div class="category-card cat-tech">
+            <div class="cat-card-top">
+                <div class="cat-icon-badge">💻</div>
+                <span class="cat-pill">Senior & Future Tech</span>
+            </div>
+            <h3>Senior Secondary & Technology</h3>
+            <p class="cat-desc">Higher secondary board mastery alongside modern computing & AI skills.</p>
+            
+            <div class="cat-offerings">
+                <div class="offering-item">
+                    <span class="offering-dot"></span>
+                    <div class="offering-text">
+                        <strong>Class 11–12 Computer Science & IP</strong>
+                        <span>Board syllabus, programming & practicals</span>
+                    </div>
+                </div>
+                <div class="offering-item">
+                    <span class="offering-dot"></span>
+                    <div class="offering-text">
+                        <strong>Artificial Intelligence</strong>
+                        <span>Foundations, algorithms & future-ready logic</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cat-card-footer">
+                <span class="cat-highlight">✦ Practical & Lab Focused</span>
+            </div>
+        </div>
+
+        <!-- CATEGORY 3: Skill Development -->
+        <div class="category-card cat-skills">
+            <div class="cat-card-top">
+                <div class="cat-icon-badge">🚀</div>
+                <span class="cat-pill">Practical Skills</span>
+            </div>
+            <h3>Skill Development</h3>
+            <p class="cat-desc">Industry-relevant computer applications, accounting, and communication.</p>
+            
+            <div class="cat-offerings">
+                <div class="offering-item">
+                    <span class="offering-dot"></span>
+                    <div class="offering-text">
+                        <strong>Tally & GST</strong>
+                        <span>Accounting software & taxation essentials</span>
+                    </div>
+                </div>
+                <div class="offering-item">
+                    <span class="offering-dot"></span>
+                    <div class="offering-text">
+                        <strong>Spoken English</strong>
+                        <span>Confidence, grammar & communication</span>
+                    </div>
+                </div>
+                <div class="offering-item">
+                    <span class="offering-dot"></span>
+                    <div class="offering-text">
+                        <strong>Basic Computer Skills</strong>
+                        <span>Digital literacy, office tools & computing</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cat-card-footer">
+                <span class="cat-highlight">✦ Career & Life Ready</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="about" class="why-us-section">
+    <div class="why-us-container">
+        <div class="why-header">
+            <div class="why-badge">🌟 Why Brilliance</div>
+            <h2>Why Students Choose Brilliance</h2>
+            <p class="why-subtitle">More than just classes — a structured learning experience built around students.</p>
+        </div>
+
+        <div class="why-grid">
+            <!-- 1. Expert Teachers -->
+            <div class="why-card">
+                <div class="why-icon-wrap purple">👨‍🏫</div>
+                <h3>Expert Teachers</h3>
+                <p>Experienced guidance focused on concept clarity and strong fundamentals.</p>
+            </div>
+
+            <!-- 2. Personal Attention -->
+            <div class="why-card">
+                <div class="why-icon-wrap pink">🎯</div>
+                <h3>Personal Attention</h3>
+                <p>Individual doubt solving and a student-focused approach to learning.</p>
+            </div>
+
+            <!-- 3. Structured Study Materials -->
+            <div class="why-card">
+                <div class="why-icon-wrap blue">📚</div>
+                <h3>Structured Study Materials</h3>
+                <p>Notes and learning resources to support regular preparation.</p>
+            </div>
+
+            <!-- 4. Regular Learning & Assessment -->
+            <div class="why-card">
+                <div class="why-icon-wrap green">📝</div>
+                <h3>Regular Learning & Assessment</h3>
+                <p>Keep learning organized and track academic progress consistently.</p>
+            </div>
+
+            <!-- 5. Dedicated Student Portal -->
+            <div class="why-card">
+                <div class="why-icon-wrap cyan">📲</div>
+                <h3>Dedicated Student Portal</h3>
+                <p>Access timetables, notes, doubts, digital ID and fee information in one place.</p>
+            </div>
+
+            <!-- 6. Smart Attendance System -->
+            <div class="why-card">
+                <div class="why-icon-wrap amber">📍</div>
+                <h3>Smart Attendance System</h3>
+                <p>QR-based attendance for convenient and organized attendance records.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── OUR CENTRES SECTION ── -->
+<section class="centres-section" id="centres">
+    <div class="centres-container">
+        <div class="centres-header">
+            <div class="centres-badge">📍 Convenient Campuses</div>
+            <h2>Our Centres in Kolkata</h2>
+            <p class="centres-subtitle">Easily accessible study centres equipped for structured learning and personal attention.</p>
+        </div>
+
+        <div class="centres-grid">
+            <!-- Centre 1 -->
+            <div class="centre-card">
+                <div class="centre-card-top">
+                    <div class="centre-icon-badge">📍</div>
+                    <span class="centre-tag">Campus 1</span>
+                </div>
+                <h3>Unit 1</h3>
+                <p class="centre-location">Pinkal Sodla Tank Road, near Surya Sangha Club</p>
+                <div class="centre-footer-badge">
+                    <span>🏛️ Kolkata Centre</span>
+                </div>
+            </div>
+
+            <!-- Centre 2 -->
+            <div class="centre-card">
+                <div class="centre-card-top">
+                    <div class="centre-icon-badge">📍</div>
+                    <span class="centre-tag">Campus 2</span>
+                </div>
+                <h3>Unit 2</h3>
+                <p class="centre-location">Near Reliance Trends, Shyamnagar</p>
+                <div class="centre-footer-badge">
+                    <span>🏛️ Kolkata Centre</span>
+                </div>
+            </div>
+
+            <!-- Centre 3 -->
+            <div class="centre-card">
+                <div class="centre-card-top">
+                    <div class="centre-icon-badge">📍</div>
+                    <span class="centre-tag">Campus 3</span>
+                </div>
+                <h3>Unit 3</h3>
+                <p class="centre-location">Badamtala, Ghoshpara Rd, Chowmatha</p>
+                <div class="centre-footer-badge">
+                    <span>🏛️ Kolkata Centre</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── CONTACT / ENQUIRY SECTION ── -->
+<section class="contact-section" id="contact">
+    <div class="contact-layout-grid">
+        <!-- Left: Contact Details Panel -->
+        <div class="contact-info-panel">
+            <div class="contact-badge">👋 Get In Touch</div>
+            <h2>Have Questions? Let's Talk.</h2>
+            <p class="contact-desc">Reach out for admissions, course details, or any questions about our coaching batches. We are here to help!</p>
+
+            <div class="contact-details-list">
+                <a href="tel:+917003437950" class="contact-detail-card">
+                    <div class="detail-icon-wrap">📞</div>
+                    <div class="detail-text">
+                        <strong>Call Us Directly</strong>
+                        <span>+91 7003437950</span>
+                    </div>
+                </a>
+
+                <a href="mailto:info@brillianceacademy.com" class="contact-detail-card">
+                    <div class="detail-icon-wrap">📧</div>
+                    <div class="detail-text">
+                        <strong>Email Address</strong>
+                        <span>info@brillianceacademy.com</span>
+                    </div>
+                </a>
+
+                <div class="contact-campus-note">
+                    <span>📍 Walk-in visits welcome across all 3 Kolkata centres</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Modern Enquiry Form Card -->
+        <div class="enquiry-form-card">
+            <h3>💬 Send an Enquiry</h3>
+            <p>Fill out the form below and our team will get back to you promptly.</p>
+
+            <form action="{{ url_for('enquiry') }}" method="POST" class="enquiry-form">
+                <div class="form-group">
+                    <label for="enquiry-name">Your Full Name</label>
+                    <input type="text" id="enquiry-name" name="name" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label for="enquiry-email">Email Address</label>
+                    <input type="email" id="enquiry-email" name="email" placeholder="Enter your email address" required>
+                </div>
+                <div class="form-group">
+                    <label for="enquiry-message">Course of Interest / Question</label>
+                    <textarea id="enquiry-message" name="message" placeholder="Which class, stream, or course are you inquiring about?" required></textarea>
+                </div>
+                <button type="submit" class="btn-enquiry-submit">Send Enquiry 🚀</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- ── FINAL CTA SECTION ── -->
+<section class="final-cta-section">
+    <div class="final-cta-container">
+        <div class="final-cta-badge">🌟 Start Today</div>
+        <h2>Ready to Start Your Learning Journey?</h2>
+        <p>Take the next step with structured, student-focused learning at Brilliance Coaching Academy.</p>
+        <div class="final-cta-btns">
+            <button class="btn-cta-primary" onclick="location.href='{{ url_for('register') }}'">🚀 Enroll Now</button>
+            <button class="btn-cta-secondary" onclick="location.href='#courses'">📚 Explore Courses</button>
+        </div>
+    </div>
+</section>
+
+<!-- ── POLISHED FOOTER ── -->
+<footer class="footer-section">
+    <div class="footer-container">
+        <div class="footer-top-grid">
+            <!-- Col 1: Brand & Bio -->
+            <div class="footer-brand">
+                <a href="#" class="footer-logo">🌟 Brilliance Coaching Academy</a>
+                <p>Comprehensive coaching for Classes 6–12 in Maths, Science, AI & Computer Science with dedicated personal mentorship.</p>
+                <p style="margin-top:10px; color:rgba(255,255,255,0.78); font-size:0.86rem;">Made with ❤️ for our students in Kolkata</p>
+            </div>
+
+            <!-- Col 2: Navigation Links -->
+            <div class="footer-col">
+                <h4>Quick Navigation</h4>
+                <div class="footer-nav-list">
+                    <a href="#">Home</a>
+                    <a href="#courses">Courses</a>
+                    <a href="#about">Why Choose Us</a>
+                    <a href="#centres">Our Centres</a>
+                    <a href="#contact">Contact & Enquiry</a>
+                </div>
+            </div>
+
+            <!-- Col 3: Community & Social Links -->
+            <div class="footer-col">
+                <h4>Connect With Us</h4>
+                <div class="footer-social-box">
+                    <a href="https://www.instagram.com/the_bca_page" target="_blank" rel="noopener noreferrer" class="footer-social-link">
+                        <span>📸</span>
+                        <span>Instagram Page</span>
+                    </a>
+                    <a href="https://whatsapp.com/channel/0029Vai2gmXInlqYHEIH2D0m" target="_blank" rel="noopener noreferrer" class="footer-social-link">
+                        <span>💬</span>
+                        <span>WhatsApp Channel</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom-bar">
+            <span>© 2026-27 Brilliance Coaching Academy. All rights reserved.</span>
+            <span>Academic Session: 2026-27 • Kolkata, West Bengal</span>
+        </div>
+    </div>
+</footer>
+
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+function openMobileNav() {
+    document.getElementById('mobileNav').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeMobileNav() {
+    document.getElementById('mobileNav').classList.remove('open');
+    document.body.style.overflow = '';
+}
+</script>
+</body>
+</html>

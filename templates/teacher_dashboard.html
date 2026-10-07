@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Dashboard — Brilliance Coaching Academy</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/teacher_dashboard.css') }}">
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>✦ Brilliance Coaching Academy</h2>
+            <p>Teacher Portal</p>
+        </div>
+        <div class="sidebar-nav">
+            <a href="{{ url_for('teacher_dashboard') }}" style="background:rgba(108,99,255,0.85); color:white;"><span class="nav-icon">🏠</span> Dashboard</a>
+            <a href="{{ url_for('scan_attendance') }}"><span class="nav-icon">📷</span> Scan QR Attendance</a>
+            <a href="{{ url_for('mark_attendance') }}"><span class="nav-icon">📝</span> Mark Attendance</a>
+            <a href="{{ url_for('upload_notes') }}"><span class="nav-icon">📤</span> Upload Notes</a>
+            <a href="{{ url_for('add_notice') }}"><span class="nav-icon">📢</span> Post Notice</a>
+            <a href="{{ url_for('my_students') }}"><span class="nav-icon">👥</span> My Students</a>
+            <a href="/teacher_doubts"><span class="nav-icon">❓</span> Doubts</a>
+            <a href="{{ url_for('change_password') }}"><span class="nav-icon">🔑</span> Change Password</a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout"><span class="nav-icon">🚪</span> Logout</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="page-header">
+            <h1>Welcome, {{ session['username'] }} 👋</h1>
+            <p>Manage your classes, attendance and study materials from here.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="cards">
+            <div class="card glow">
+                <h3>My Classes</h3>
+                <p style="font-size:1.2rem;">{{ assigned_classes or '—' }}</p>
+                <button onclick="location.href='{{ url_for('mark_attendance') }}'">Mark Attendance →</button>
+            </div>
+            <div class="card glow">
+                <h3>My Subject</h3>
+                <p style="font-size:1.2rem;">{{ next_lecture or '—' }}</p>
+                <button onclick="location.href='{{ url_for('upload_notes') }}'">Upload Notes →</button>
+            </div>
+            <div class="card glow">
+                <h3>Notice Board</h3>
+                <p style="font-size:1rem; font-weight:500; color:#5c6080;">Post updates</p>
+                <button onclick="location.href='{{ url_for('add_notice') }}'">Edit Notice →</button>
+            </div>
+            <div class="card glow">
+                <h3>My Students</h3>
+                <p style="font-size:1rem; font-weight:500; color:#5c6080;">View roster</p>
+                <button onclick="location.href='{{ url_for('my_students') }}'">View All →</button>
+            </div>
+        </div>
+    </main>
+</div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

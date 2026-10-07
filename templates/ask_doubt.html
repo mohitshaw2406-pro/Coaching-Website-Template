@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask a Doubt</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/student_dashboard.css') }}">
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <h2>Student Panel</h2>
+        <a href="{{ url_for('student_dashboard') }}">🏠 Dashboard</a>
+        <a href="{{ url_for('ask_doubt') }}" style="background:#334155">❓ Ask a Doubt</a>
+        <a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a>
+    </aside>
+    <main class="main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}" style="max-width: 650px; margin: 0 auto 20px;">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="enquiry-card glow" style="max-width: 650px; margin: 20px auto 35px; background: var(--surface); padding: 30px; border-radius: var(--radius-lg); border: 2.5px solid var(--border); box-shadow: var(--shadow);">
+            <h2 style="color: var(--purple); text-align: center; font-size: 1.5rem; font-weight: 900; margin-bottom: 6px;">Ask a Question ❓</h2>
+            <p style="text-align: center; color: var(--muted); font-size: 0.9rem; font-weight: 600; margin-bottom: 22px;">Submit your doubts to your teachers and receive answers here.</p>
+            <form method="POST">
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 0.75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Select Subject</label>
+                    <select name="subject" required style="width:100%; padding:12px 14px; border-radius:var(--radius-sm); border:2px solid var(--border); font-family: inherit; font-size: 0.9rem; font-weight: 600; color: var(--text); background: var(--surface-2);">
+                        <option value="">Select Subject</option>
+                        <option>Mathematics</option>
+                        <option>Science</option>
+                        <option>Social Science</option>
+                        <option>English</option>
+                        <option>Hindi</option>
+                        <option>Artificial Intelligence</option>
+                        <option>Computer Science</option>
+                        <option>Information Practices</option>
+                        <option>Tally & GST</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 0.75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Your Question / Doubt</label>
+                    <textarea name="question" placeholder="Describe your doubt in detail..." required style="width:100%; height:130px; padding:12px 14px; border-radius:var(--radius-sm); border:2px solid var(--border); font-family: inherit; font-size: 0.9rem; font-weight: 600; color: var(--text); background: var(--surface-2); resize: vertical;"></textarea>
+                </div>
+                <button type="submit" style="width:100%; padding:14px; background: linear-gradient(135deg, #A855F7, #EC4899); color:white; border:none; border-radius:var(--radius-sm); font-size: 1rem; font-weight:800; cursor:pointer; box-shadow: 0 4px 14px rgba(168,85,247,0.3); transition: var(--transition);">
+                    Submit Doubt 🚀
+                </button>
+            </form>
+        </div>
+
+        <div style="max-width: 650px; margin: 0 auto 40px;">
+            <div class="section-header" style="margin-bottom: 16px;">
+                <h2 style="font-size: 1.25rem; font-weight: 900; color: var(--text);">My Previous Doubts & Answers 💬</h2>
+            </div>
+
+            {% if doubts and doubts|length > 0 %}
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    {% for d in doubts %}
+                    <div class="card" style="border-radius: var(--radius-md); padding: 20px; border-left: 5px solid {{ '#10B981' if d.answer else '#F97316' }}; background: var(--surface); border-top: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span class="badge badge-purple" style="font-size: 0.8rem;">{{ d.subject }}</span>
+                                {% if d.created_at %}
+                                <span style="font-size: 0.78rem; color: var(--muted); font-weight: 700;">📅 {{ d.created_at | string | slice(0, 10) }}</span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                {% if d.answer %}
+                                <span class="badge badge-success">✓ Answered</span>
+                                {% else %}
+                                <span class="badge badge-danger" style="background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;">⏳ Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 14px;">
+                            <div style="font-size: 0.74rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">My Question:</div>
+                            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text); line-height: 1.5; white-space: pre-wrap;">{{ d.question }}</div>
+                        </div>
+
+                        {% if d.answer %}
+                        <div style="background: var(--surface-2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px;">
+                            <div style="font-size: 0.75rem; font-weight: 800; color: #10B981; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                                💡 Teacher's Answer {% if d.answered_by %}<span style="color: var(--muted); font-weight: 600;">(by {{ d.answered_by }})</span>{% endif %}:
+                            </div>
+                            <div style="font-size: 0.92rem; font-weight: 600; color: var(--text); line-height: 1.5; white-space: pre-wrap;">{{ d.answer }}</div>
+                        </div>
+                        {% else %}
+                        <div style="background: rgba(249, 115, 22, 0.08); border: 1px dashed rgba(249, 115, 22, 0.4); border-radius: var(--radius-sm); padding: 10px 14px; margin-top: 8px; font-size: 0.85rem; color: #B45309; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            <span>⏳</span> Pending response — a teacher will answer your question soon.
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card" style="text-align: center; padding: 36px 20px; border-radius: var(--radius-md); background: var(--surface); border-top: none;">
+                    <div style="font-size: 2.2rem; margin-bottom: 10px;">💬</div>
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text); margin-bottom: 6px;">No Doubts Asked Yet</h3>
+                    <p style="color: var(--muted); font-size: 0.88rem; font-weight: 600; margin: 0;">Have a question about your lessons? Submit a doubt using the form above!</p>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

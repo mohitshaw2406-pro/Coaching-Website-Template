@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Attendance - Brilliance Coaching Academy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/student_dashboard.css') }}">
+    <style>
+        .att-summary { display: flex; gap: 16px; margin-bottom: 25px; flex-wrap: wrap; }
+        .att-box { background: white; padding: 20px 24px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); text-align: center; flex: 1; min-width: 120px; }
+        .att-box h3 { color: #764ba2; margin-bottom: 5px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .att-box p { font-size: 1.8rem; font-weight: 700; margin: 0; }
+        .present-color { color: #16a34a; }
+        .absent-color  { color: #dc2626; }
+        .percent-color { color: #764ba2; }
+        .filter-bar { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
+        .filter-bar label { font-weight: 600; color: #555; }
+        .filter-bar select { padding: 9px 14px; border-radius: 8px; border: 1px solid #ddd; font-family: inherit; color: #333; }
+        .filter-bar button { padding: 9px 20px; background: #764ba2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .clear-link { color: #764ba2; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+        .progress-bar-bg { background: #e9ecef; border-radius: 10px; height: 8px; margin-top: 8px; }
+        .progress-bar-fill { height: 8px; border-radius: 10px; background: linear-gradient(90deg, #667eea, #764ba2); }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        tr:last-child td { border-bottom: none; }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <h2>Student Panel</h2>
+        <a href="{{ url_for('student_dashboard') }}">🏠 Dashboard</a>
+        <a href="{{ url_for('my_courses') }}">📚 My Courses</a>
+        <a href="{{ url_for('view_timetable') }}">🕒 My Timetable</a>
+        <a href="{{ url_for('view_attendance') }}" style="background:#334155">📝 My Attendance</a>
+        <a href="{{ url_for('ask_doubt') }}">❓ Ask a Question</a>
+        <a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a>
+    </aside>
+
+    <main class="main">
+        <h1>Attendance History 📋</h1>
+
+        <div class="filter-bar">
+            <label>📅 Filter by Month:</label>
+            <form method="GET" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <select name="month">
+                    <option value="">All Months</option>
+                    {% for m in months %}
+                    <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Filter</button>
+                {% if selected_month %}
+                <a href="{{ url_for('view_attendance') }}" class="clear-link">✕ Clear</a>
+                {% endif %}
+            </form>
+        </div>
+
+        {% if records %}
+        {% set total = records | length %}
+        {% set present_count = records | selectattr('status', 'equalto', 'Present') | list | length %}
+        {% set absent_count = total - present_count %}
+        {% set percent = ((present_count / total) * 100) | round(1) %}
+
+        <div class="att-summary">
+            <div class="att-box"><h3>Total Days</h3><p>{{ total }}</p></div>
+            <div class="att-box"><h3>Present</h3><p class="present-color">{{ present_count }}</p></div>
+            <div class="att-box"><h3>Absent</h3><p class="absent-color">{{ absent_count }}</p></div>
+            <div class="att-box" style="min-width:180px;">
+                <h3>Attendance %</h3>
+                <p class="percent-color">{{ percent }}%</p>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width:{{ percent }}%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr style="background:#764ba2; color:white;">
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Marked By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td>{{ r['date'] }}</td>
+                    <td style="font-weight:700; color:{% if r['status'] == 'Present' %}#16a34a{% else %}#dc2626{% endif %};">
+                        {% if r['status'] == 'Present' %}✅{% else %}❌{% endif %} {{ r['status'] }}
+                    </td>
+                    <td>{{ r['marked_by'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
+        <div style="text-align:center; margin-top:50px; color:#666;">
+            <p style="font-size:3rem;">📋</p>
+            <p>No attendance records found{% if selected_month %} for {{ selected_month }}{% endif %}.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

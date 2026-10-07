@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Brilliance Coaching Academy</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+<style>
+    .fee-overview-section {
+        margin-bottom: 32px;
+    }
+    .fee-overview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+    .fee-overview-header h2 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: #1e293b;
+    }
+    .fee-manage-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        background: #4f46e5;
+        color: #ffffff;
+        font-size: 0.84rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .fee-manage-link:hover {
+        background: #4338ca;
+    }
+    .fee-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    .fee-metric-card {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e2e8f0;
+    }
+    .fee-metric-card h3 {
+        margin: 0 0 8px 0;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #64748b;
+    }
+    .fee-metric-val {
+        margin: 0;
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+    .fee-metric-val.collected { color: #16a34a; }
+    .fee-metric-val.pending { color: #dc2626; }
+    .status-counts-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+    }
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+    .status-pill.paid { background: #dcfce7; color: #15803d; }
+    .status-pill.partial { background: #fef3c7; color: #b45309; }
+    .status-pill.pending { background: #fee2e2; color: #b91c1c; }
+    .status-pill.notset { background: #f1f5f9; color: #475569; }
+</style>
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>✦ Brilliance Coaching Academy</h2>
+            <p>Admin Panel</p>
+        </div>
+        <div class="sidebar-nav">
+            <a href="{{ url_for('admin_dashboard') }}" style="background:rgba(108,99,255,0.85); color:white;"><span class="nav-icon">📩</span> Enquiries</a>
+            <a href="{{ url_for('students_section') }}"><span class="nav-icon">🎓</span> Students</a>
+            <a href="/admin/fee_reports"><span class="nav-icon">📊</span> Fee Reports</a>
+            <a href="{{ url_for('manage_teachers') }}"><span class="nav-icon">👨‍🏫</span> Teachers</a>
+            <a href="{{ url_for('manage_timetable') }}"><span class="nav-icon">📅</span> Timetable</a>
+            <a href="{{ url_for('change_password') }}"><span class="nav-icon">🔑</span> Change Password</a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout"><span class="nav-icon">🚪</span> Logout</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="page-header">
+            <h1>Welcome back, {{ session['username'] }} 👋</h1>
+            <p>Here's what's happening at Brilliance Coaching Academy today.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="cards">
+            <div class="card glow">
+                <h3>Total Students</h3>
+                <p>{{ students_count }}</p>
+            </div>
+            <div class="card glow">
+                <h3>Total Teachers</h3>
+                <p>{{ teachers_count }}</p>
+            </div>
+            <div class="card glow">
+                <h3>Enquiries</h3>
+                <p>{{ enquiries_count }}</p>
+            </div>
+        </div>
+
+        <section class="fee-overview-section" aria-label="Fee Collection Overview">
+            <div class="fee-overview-header">
+                <h2>💰 Fee Collection Overview</h2>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <a href="/admin/fee_reports" class="fee-manage-link" style="background:#059669;">📊 Fee Reports</a>
+                    <a href="{{ url_for('students_section') }}" class="fee-manage-link">Manage Student Fees →</a>
+                </div>
+            </div>
+            <div class="fee-overview-grid">
+                <div class="fee-metric-card">
+                    <h3>Total Expected Fees</h3>
+                    <p class="fee-metric-val">₹{{ fee_overview.total_expected | round(2) }}</p>
+                </div>
+                <div class="fee-metric-card">
+                    <h3>Total Collected</h3>
+                    <p class="fee-metric-val collected">₹{{ fee_overview.total_collected | round(2) }}</p>
+                </div>
+                <div class="fee-metric-card">
+                    <h3>Pending Amount</h3>
+                    <p class="fee-metric-val pending">₹{{ fee_overview.total_pending | round(2) }}</p>
+                </div>
+                <div class="fee-metric-card">
+                    <h3>Student Payment Status</h3>
+                    <div class="status-counts-row">
+                        <span class="status-pill paid">Paid: {{ fee_overview.paid_count }}</span>
+                        <span class="status-pill partial">Partial: {{ fee_overview.partial_count }}</span>
+                        <span class="status-pill pending">Pending: {{ fee_overview.pending_count }}</span>
+                        {% if fee_overview.not_set_count > 0 %}
+                        <span class="status-pill notset">Not Set: {{ fee_overview.not_set_count }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-header">
+            <h2>Recent Enquiries</h2>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Name</th><th>Email / Mobile</th><th>Message</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                {% for e in enquiries %}
+                <tr>
+                    <td><strong>{{ e[1] }}</strong></td>
+                    <td style="color:#5c6080;">{{ e[2] }}</td>
+                    <td style="color:#5c6080; max-width:300px;">{{ e[3][:80] }}{% if e[3]|length > 80 %}…{% endif %}</td>
+                    <td>
+                        <form action="{{ url_for('delete_enquiry', id=e[0]) }}" method="POST" style="display:inline;">
+                            <button class="del-btn" onclick="return confirm('Delete this enquiry?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="text-align:center; color:#9ca3c0; padding:32px;">No enquiries yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

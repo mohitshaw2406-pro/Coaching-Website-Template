@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan QR Attendance | Teacher Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/teacher_dashboard.css') }}">
+    <style>
+        .scanner-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 22px;
+            align-items: start;
+            margin-bottom: 24px;
+        }
+        .scanner-card {
+            background: var(--surface);
+            border: 2.5px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            box-shadow: var(--shadow);
+        }
+        .camera-stage {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            max-height: 380px;
+            background: #0F0E1A;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 2px solid var(--border-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #qr-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .scan-reticle {
+            position: absolute;
+            width: 210px;
+            height: 210px;
+            border: 3px solid rgba(16, 185, 129, 0.9);
+            border-radius: 18px;
+            box-shadow: 0 0 0 9999px rgba(15, 14, 26, 0.42);
+            pointer-events: none;
+            display: none;
+        }
+        .camera-placeholder {
+            text-align: center;
+            color: #EDE9FF;
+            padding: 24px;
+        }
+        .camera-placeholder .cam-icon {
+            font-size: 2.6rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+        .cam-btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .cam-btn-start {
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+        }
+        .cam-btn-stop {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 2px solid #FCA5A5;
+        }
+        .cam-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .status-banner {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 700;
+            border: 2px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text-2);
+        }
+        .status-banner.success {
+            background: #D1FAE5;
+            color: #065F46;
+            border-color: #6EE7B7;
+        }
+        .status-banner.warn {
+            background: #FEF3C7;
+            color: #92400E;
+            border-color: #FCD34D;
+        }
+        .status-banner.error {
+            background: #FEE2E2;
+            color: #991B1B;
+            border-color: #FCA5A5;
+        }
+        [data-theme="dark"] .status-banner.success {
+            background: #064E3B;
+            color: #6EE7B7;
+            border-color: #065F46;
+        }
+        [data-theme="dark"] .status-banner.warn {
+            background: #451A03;
+            color: #FCD34D;
+            border-color: #92400E;
+        }
+        [data-theme="dark"] .status-banner.error {
+            background: #450A0A;
+            color: #FCA5A5;
+            border-color: #991B1B;
+        }
+        .student-result-card {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--border-2);
+            background: var(--purple-light);
+            display: none;
+            align-items: center;
+            gap: 14px;
+        }
+        .student-avatar {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            color: white;
+            font-weight: 900;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 2px solid white;
+        }
+        .student-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .student-meta h4 {
+            font-size: 1.02rem;
+            font-weight: 900;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+        .student-meta p {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-2);
+        }
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 460px;
+            overflow-y: auto;
+        }
+        .session-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 14px;
+            background: var(--surface-2);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            flex-wrap: wrap;
+        }
+        .session-item-title {
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .session-item-sub {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--muted);
+        }
+        .action-btn-sm {
+            padding: 7px 14px;
+            border-radius: 99px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .action-btn-present {
+            background: #D1FAE5;
+            color: #065F46;
+            border: 1.5px solid #6EE7B7;
+        }
+        .action-btn-present:hover {
+            background: var(--green);
+            color: white;
+        }
+        .action-btn-correct {
+            background: var(--purple-light);
+            color: var(--purple);
+            border: 1.5px solid var(--border-2);
+        }
+        .action-btn-correct:hover {
+            background: var(--purple);
+            color: white;
+        }
+        .confirm-box {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: #FEF3C7;
+            border: 1.5px solid #FCD34D;
+            color: #92400E;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+        [data-theme="dark"] .confirm-box {
+            background: #451A03;
+            color: #FCD34D;
+            border-color: #92400E;
+        }
+        .confirm-btn-yes {
+            padding: 6px 13px;
+            border-radius: 99px;
+            border: none;
+            background: #D97706;
+            color: white;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.76rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .confirm-btn-cancel {
+            padding: 6px 13px;
+            border-radius: 99px;
+            border: 1.5px solid currentColor;
+            background: transparent;
+            color: inherit;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.76rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .summary-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        @media (max-width: 900px) {
+            .scanner-grid {
+                grid-template-columns: 1fr;
+            }
+            .camera-stage {
+                aspect-ratio: 1 / 1;
+                max-height: 340px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+
+<div class="dashboard">
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <h2>🎓 Teacher Portal</h2>
+            <p>Brilliance Coaching Academy</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('teacher_dashboard') }}"><span class="nav-icon">🏠</span><span>Dashboard</span></a>
+            <a href="{{ url_for('scan_attendance') }}" style="background:rgba(108,99,255,0.85); color:white;"><span class="nav-icon">📷</span><span>Scan QR Attendance</span></a>
+            <a href="{{ url_for('mark_attendance') }}"><span class="nav-icon">📝</span><span>Mark Attendance</span></a>
+            <a href="{{ url_for('upload_notes') }}"><span class="nav-icon">📤</span><span>Upload Notes</span></a>
+            <a href="{{ url_for('add_notice') }}"><span class="nav-icon">📢</span><span>Post Notice</span></a>
+            <a href="{{ url_for('my_students') }}"><span class="nav-icon">👥</span><span>My Students</span></a>
+            <a href="/teacher_doubts"><span class="nav-icon">❓</span><span>Doubts</span></a>
+            <a href="{{ url_for('change_password') }}"><span class="nav-icon">🔑</span><span>Change Password</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout">
+                <span class="nav-icon">🚪</span><span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h1>📷 Scan QR Attendance</h1>
+                <p>Date (IST): <strong>{{ today }}</strong> · Point Android Chrome camera at a student ID card QR code</p>
+            </div>
+            <a href="{{ url_for('mark_attendance') }}" class="edit-link" style="padding:10px 16px;font-size:0.84rem;">
+                📋 Manual Class Attendance
+            </a>
+        </div>
+
+        <!-- Top Grid: Live QR Camera + Session Scan Log -->
+        <div class="scanner-grid">
+            <!-- Left: Camera + Manual Fallback -->
+            <div class="scanner-card">
+                <h3 style="font-size:1rem;font-weight:900;margin-bottom:14px;">Live QR Camera Scanner</h3>
+
+                <div class="camera-stage">
+                    <video id="qr-video" autoplay playsinline muted></video>
+                    <div id="scan-reticle" class="scan-reticle"></div>
+                    <div id="camera-placeholder" class="camera-placeholder">
+                        <span class="cam-icon">📷</span>
+                        <p style="font-weight:800;font-size:0.95rem;">Camera is currently off</p>
+                        <p style="font-size:0.8rem;opacity:0.75;margin-top:4px;">Tap "Start Camera" to scan student ID cards</p>
+                    </div>
+                </div>
+
+                <div class="camera-controls">
+                    <button type="button" id="start-cam-btn" class="cam-btn cam-btn-start" onclick="startScanner()">
+                        ▶ Start Camera
+                    </button>
+                    <button type="button" id="stop-cam-btn" class="cam-btn cam-btn-stop" onclick="stopScanner()" disabled>
+                        ⏹ Stop Camera
+                    </button>
+                </div>
+
+                <div id="scan-status" class="status-banner">
+                    Ready to scan. Format: <strong>BCA-2026-XXXX</strong>
+                </div>
+
+                <div id="student-result" class="student-result-card">
+                    <div id="student-avatar" class="student-avatar">S</div>
+                    <div class="student-meta" style="flex:1;">
+                        <h4 id="student-name">—</h4>
+                        <p id="student-details">—</p>
+                    </div>
+                    <span id="student-badge" class="badge badge-success">Present</span>
+                </div>
+
+                <!-- Manual Fallback Input -->
+                <div style="margin-top:22px;padding-top:18px;border-top:2px solid var(--border);">
+                    <h3 style="font-size:0.9rem;font-weight:900;color:var(--text);margin-bottom:10px;">
+                        ⌨️ Manual Student ID Fallback
+                    </h3>
+                    <form id="manual-qr-form" onsubmit="handleManualSubmit(event)" style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <input
+                            type="text"
+                            id="manual-qr-input"
+                            placeholder="e.g. BCA-2026-0003"
+                            pattern="^BCA-2026-[0-9]{4,}$"
+                            title="Enter full ID in format BCA-2026-XXXX"
+                            style="flex:1;min-width:180px;text-transform:uppercase;"
+                            required
+                        >
+                        <button
+                            type="submit"
+                            id="manual-submit-btn"
+                            style="padding:11px 20px;background:linear-gradient(135deg,#A855F7,#EC4899);color:white;border:none;border-radius:var(--radius-sm);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:800;cursor:pointer;"
+                        >
+                            Mark Present ✅
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right: Session Scan Log -->
+            <div class="scanner-card">
+                <div class="section-header" style="margin-bottom:14px;">
+                    <h3 style="font-size:1rem;font-weight:900;">Session Scan List</h3>
+                    <span id="session-count-badge" class="badge badge-purple">0 Scanned</span>
+                </div>
+
+                <div id="session-list" class="session-list">
+                    <div id="session-empty" style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:700;font-size:0.88rem;">
+                        No students scanned in this session yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Grid: Student Search (Without ID Card) + Today's Attendance List (With Confirmed Correction) -->
+        <div class="scanner-grid">
+            <!-- Left: Search Student by Name or ID (For Students Without ID Cards) -->
+            <div class="scanner-card">
+                <div class="section-header" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <h3 style="font-size:1rem;font-weight:900;">🔍 Search Student (No ID Card)</h3>
+                        <p style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-top:2px;">
+                            Search by student name, numeric ID, or BCA-2026-XXXX to mark Present manually
+                        </p>
+                    </div>
+                </div>
+
+                <input
+                    type="text"
+                    id="student-search-input"
+                    class="search-box"
+                    placeholder="Search student name, ID (e.g. 3 or BCA-2026-0003), or class..."
+                    oninput="renderStudentSearchList()"
+                >
+
+                <div id="student-search-list" class="session-list" style="max-height:380px;"></div>
+            </div>
+
+            <!-- Right: Today's Attendance List with Explicit Teacher-Confirmed Correction -->
+            <div class="scanner-card">
+                <div class="section-header" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <h3 style="font-size:1rem;font-weight:900;">📋 Today's Attendance ({{ today }})</h3>
+                        <p style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-top:2px;">
+                            View Present/Absent records or make a teacher-confirmed correction
+                        </p>
+                    </div>
+                    <div class="summary-pills">
+                        <span id="today-present-pill" class="badge badge-success">0 Present</span>
+                        <span id="today-absent-pill" class="badge badge-danger">0 Absent</span>
+                    </div>
+                </div>
+
+                <input
+                    type="text"
+                    id="today-attendance-filter"
+                    class="search-box"
+                    placeholder="Filter today's attendance by name, ID, class, or status..."
+                    oninput="renderTodayAttendanceList()"
+                >
+
+                <div id="today-attendance-list" class="session-list" style="max-height:380px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+(function () {
+    const videoEl = document.getElementById('qr-video');
+    const reticleEl = document.getElementById('scan-reticle');
+    const placeholderEl = document.getElementById('camera-placeholder');
+    const startBtn = document.getElementById('start-cam-btn');
+    const stopBtn = document.getElementById('stop-cam-btn');
+    const statusEl = document.getElementById('scan-status');
+    const resultCardEl = document.getElementById('student-result');
+    const avatarEl = document.getElementById('student-avatar');
+    const nameEl = document.getElementById('student-name');
+    const detailsEl = document.getElementById('student-details');
+    const badgeEl = document.getElementById('student-badge');
+    const sessionListEl = document.getElementById('session-list');
+    const sessionEmptyEl = document.getElementById('session-empty');
+    const sessionCountBadgeEl = document.getElementById('session-count-badge');
+    const manualInputEl = document.getElementById('manual-qr-input');
+    const studentSearchInputEl = document.getElementById('student-search-input');
+    const studentSearchListEl = document.getElementById('student-search-list');
+    const todayFilterInputEl = document.getElementById('today-attendance-filter');
+    const todayAttendanceListEl = document.getElementById('today-attendance-list');
+    const todayPresentPillEl = document.getElementById('today-present-pill');
+    const todayAbsentPillEl = document.getElementById('today-absent-pill');
+
+    let mediaStream = null;
+    let barcodeDetector = null;
+    let scanTimer = null;
+    let isScannerRunning = false;
+    let isSubmitting = false;
+
+    // Duplicate scan cooldown: code -> timestamp (ms)
+    const recentScans = new Map();
+    const SCAN_COOLDOWN_MS = 3500;
+    const sessionScans = [];
+
+    // Initial server-rendered data for student search and today's attendance
+    let allStudents = {{ students_json | safe }};
+    let todayAttendance = {{ today_attendance_json | safe }};
+    let pendingCorrectionStudentId = null;
+
+    function setStatus(message, type) {
+        statusEl.className = 'status-banner' + (type ? ' ' + type : '');
+        statusEl.textContent = message;
+    }
+
+    function showStudentResult(student, apiStatus) {
+        if (!student) return;
+        resultCardEl.style.display = 'flex';
+
+        if (student.photo_url) {
+            avatarEl.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = student.photo_url;
+            img.alt = student.name || 'Student';
+            avatarEl.appendChild(img);
+        } else {
+            avatarEl.textContent = (student.name || 'S').charAt(0).toUpperCase();
+        }
+
+        nameEl.textContent = student.name;
+        detailsEl.textContent = student.unique_id + ' · Class ' + student.class_name;
+
+        if (apiStatus === 'ALREADY_MARKED') {
+            badgeEl.className = 'badge badge-purple';
+            badgeEl.textContent = 'Already Present';
+        } else if (apiStatus === 'UPDATED_TO_PRESENT') {
+            badgeEl.className = 'badge badge-success';
+            badgeEl.textContent = 'Updated → Present';
+        } else {
+            badgeEl.className = 'badge badge-success';
+            badgeEl.textContent = 'Marked Present';
+        }
+    }
+
+    function addSessionScan(student, apiStatus) {
+        if (!student) return;
+        const existingIdx = sessionScans.findIndex(function (item) {
+            return item.unique_id === student.unique_id;
+        });
+
+        const timeStr = new Date().toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
+        const entry = {
+            unique_id: student.unique_id,
+            name: student.name,
+            class_name: student.class_name,
+            status: apiStatus,
+            time: timeStr
+        };
+
+        if (existingIdx !== -1) {
+            sessionScans.splice(existingIdx, 1);
+        }
+        sessionScans.unshift(entry);
+        renderSessionList();
+    }
+
+    function renderSessionList() {
+        sessionCountBadgeEl.textContent = sessionScans.length + ' Scanned';
+        if (sessionScans.length === 0) {
+            sessionListEl.innerHTML = '';
+            sessionEmptyEl.style.display = 'block';
+            sessionListEl.appendChild(sessionEmptyEl);
+            return;
+        }
+        sessionEmptyEl.style.display = 'none';
+        sessionListEl.innerHTML = '';
+
+        sessionScans.forEach(function (item) {
+            const row = document.createElement('div');
+            row.className = 'session-item';
+
+            const left = document.createElement('div');
+            const title = document.createElement('div');
+            title.className = 'session-item-title';
+            title.textContent = item.name + ' (Class ' + item.class_name + ')';
+
+            const sub = document.createElement('div');
+            sub.className = 'session-item-sub';
+            sub.textContent = item.unique_id + ' · ' + item.time;
+
+            left.appendChild(title);
+            left.appendChild(sub);
+
+            const badge = document.createElement('span');
+            if (item.status === 'ALREADY_MARKED') {
+                badge.className = 'badge badge-purple';
+                badge.textContent = 'Already Marked';
+            } else if (item.status === 'UPDATED_TO_PRESENT') {
+                badge.className = 'badge badge-success';
+                badge.textContent = 'Updated Present';
+            } else {
+                badge.className = 'badge badge-success';
+                badge.textContent = 'Present ✅';
+            }
+
+            row.appendChild(left);
+            row.appendChild(badge);
+            sessionListEl.appendChild(row);
+        });
+    }
+
+    async function refreshTodayOverview() {
+        try {
+            const res = await fetch('/api/qr_attendance/today', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (Array.isArray(data.students)) {
+                allStudents = data.students;
+            }
+            if (Array.isArray(data.attendance)) {
+                todayAttendance = data.attendance;
+            }
+            renderStudentSearchList();
+            renderTodayAttendanceList();
+        } catch (_err) {
+            // Keep existing local state on transient failure
+        }
+    }
+
+    window.renderStudentSearchList = function renderStudentSearchList() {
+        const query = (studentSearchInputEl.value || '').trim().toLowerCase();
+        studentSearchListEl.innerHTML = '';
+
+        const filtered = allStudents.filter(function (s) {
+            if (!query) return true;
+            const nameMatch = String(s.name || '').toLowerCase().indexOf(query) !== -1;
+            const uidMatch = String(s.unique_id || '').toLowerCase().indexOf(query) !== -1;
+            const idMatch = String(s.id || '') === query;
+            const classMatch = ('class ' + String(s.class_name || '').toLowerCase()).indexOf(query) !== -1;
+            return nameMatch || uidMatch || idMatch || classMatch;
+        });
+
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'text-align:center;padding:28px 14px;color:var(--muted);font-weight:700;font-size:0.86rem;';
+            empty.textContent = 'No matching students found.';
+            studentSearchListEl.appendChild(empty);
+            return;
+        }
+
+        filtered.slice(0, 40).forEach(function (student) {
+            const row = document.createElement('div');
+            row.className = 'session-item';
+
+            const left = document.createElement('div');
+            const title = document.createElement('div');
+            title.className = 'session-item-title';
+            title.textContent = student.name + ' · Class ' + student.class_name;
+
+            const sub = document.createElement('div');
+            sub.className = 'session-item-sub';
+            sub.textContent = student.unique_id + (student.today_status ? ' · Today: ' + student.today_status : ' · Not Marked Today');
+
+            left.appendChild(title);
+            left.appendChild(sub);
+
+            const right = document.createElement('div');
+            right.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+            if (student.today_status === 'Present') {
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-success';
+                badge.textContent = 'Present ✅';
+                right.appendChild(badge);
+            } else {
+                if (student.today_status === 'Absent') {
+                    const absBadge = document.createElement('span');
+                    absBadge.className = 'badge badge-danger';
+                    absBadge.textContent = 'Absent';
+                    right.appendChild(absBadge);
+                }
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'action-btn-sm action-btn-present';
+                btn.textContent = 'Mark Present ✅';
+                btn.onclick = function () {
+                    window.markStudentPresentManual(student.unique_id);
+                };
+                right.appendChild(btn);
+            }
+
+            row.appendChild(left);
+            row.appendChild(right);
+            studentSearchListEl.appendChild(row);
+        });
+    };
+
+    window.renderTodayAttendanceList = function renderTodayAttendanceList() {
+        const filter = (todayFilterInputEl.value || '').trim().toLowerCase();
+        todayAttendanceListEl.innerHTML = '';
+
+        let presentCount = 0;
+        let absentCount = 0;
+        todayAttendance.forEach(function (rec) {
+            if (rec.status === 'Present') presentCount++;
+            else if (rec.status === 'Absent') absentCount++;
+        });
+
+        todayPresentPillEl.textContent = presentCount + ' Present';
+        todayAbsentPillEl.textContent = absentCount + ' Absent';
+
+        const filtered = todayAttendance.filter(function (rec) {
+            if (!filter) return true;
+            const nameMatch = String(rec.name || '').toLowerCase().indexOf(filter) !== -1;
+            const uidMatch = String(rec.unique_id || '').toLowerCase().indexOf(filter) !== -1;
+            const statusMatch = String(rec.status || '').toLowerCase().indexOf(filter) !== -1;
+            const classMatch = ('class ' + String(rec.class_name || '').toLowerCase()).indexOf(filter) !== -1;
+            return nameMatch || uidMatch || statusMatch || classMatch;
+        });
+
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'text-align:center;padding:28px 14px;color:var(--muted);font-weight:700;font-size:0.86rem;';
+            empty.textContent = todayAttendance.length === 0
+                ? 'No attendance records marked for today yet.'
+                : 'No today attendance records match your filter.';
+            todayAttendanceListEl.appendChild(empty);
+            return;
+        }
+
+        filtered.forEach(function (rec) {
+            const row = document.createElement('div');
+            row.className = 'session-item';
+
+            const left = document.createElement('div');
+            const title = document.createElement('div');
+            title.className = 'session-item-title';
+            title.textContent = rec.name + ' · Class ' + rec.class_name;
+
+            const sub = document.createElement('div');
+            sub.className = 'session-item-sub';
+            sub.textContent = rec.unique_id + (rec.marked_by ? ' · Marked by ' + rec.marked_by : '');
+
+            left.appendChild(title);
+            left.appendChild(sub);
+
+            const right = document.createElement('div');
+            right.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+            const statusBadge = document.createElement('span');
+            if (rec.status === 'Present') {
+                statusBadge.className = 'badge badge-success';
+                statusBadge.textContent = 'Present';
+            } else {
+                statusBadge.className = 'badge badge-danger';
+                statusBadge.textContent = 'Absent';
+            }
+            right.appendChild(statusBadge);
+
+            const targetStatus = rec.status === 'Present' ? 'Absent' : 'Present';
+            const correctBtn = document.createElement('button');
+            correctBtn.type = 'button';
+            correctBtn.className = 'action-btn-sm action-btn-correct';
+            correctBtn.textContent = '✏️ Correct';
+            correctBtn.onclick = function () {
+                pendingCorrectionStudentId = pendingCorrectionStudentId === rec.student_id ? null : rec.student_id;
+                renderTodayAttendanceList();
+            };
+            right.appendChild(correctBtn);
+
+            row.appendChild(left);
+            row.appendChild(right);
+
+            if (pendingCorrectionStudentId === rec.student_id) {
+                const confirmBox = document.createElement('div');
+                confirmBox.className = 'confirm-box';
+
+                const msg = document.createElement('span');
+                msg.textContent = 'Confirm changing ' + rec.name + ' from ' + rec.status + ' to ' + targetStatus + '?';
+
+                const btnGroup = document.createElement('div');
+                btnGroup.style.cssText = 'display:flex;gap:6px;';
+
+                const yesBtn = document.createElement('button');
+                yesBtn.type = 'button';
+                yesBtn.className = 'confirm-btn-yes';
+                yesBtn.textContent = 'Confirm → ' + targetStatus;
+                yesBtn.onclick = function () {
+                    window.confirmAttendanceCorrection(rec.student_id, targetStatus);
+                };
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.type = 'button';
+                cancelBtn.className = 'confirm-btn-cancel';
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.onclick = function () {
+                    pendingCorrectionStudentId = null;
+                    renderTodayAttendanceList();
+                };
+
+                btnGroup.appendChild(yesBtn);
+                btnGroup.appendChild(cancelBtn);
+                confirmBox.appendChild(msg);
+                confirmBox.appendChild(btnGroup);
+                row.appendChild(confirmBox);
+            }
+
+            todayAttendanceListEl.appendChild(row);
+        });
+    };
+
+    window.markStudentPresentManual = async function markStudentPresentManual(uniqueId) {
+        if (!uniqueId) return;
+        recentScans.delete(uniqueId);
+        await submitQrCode(uniqueId);
+    };
+
+    window.confirmAttendanceCorrection = async function confirmAttendanceCorrection(studentId, newStatus) {
+        if (!studentId || !newStatus || isSubmitting) return;
+        isSubmitting = true;
+        setStatus('Applying teacher-confirmed attendance correction...', '');
+
+        try {
+            const response = await fetch('/api/attendance/correct', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    student_id: studentId,
+                    status: newStatus,
+                    confirmed: true
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                setStatus((data && data.message) || 'Failed to correct attendance.', 'error');
+                return;
+            }
+
+            pendingCorrectionStudentId = null;
+            setStatus('✅ ' + data.message, 'success');
+            await refreshTodayOverview();
+        } catch (_err) {
+            setStatus('Network error while correcting attendance. Please try again.', 'error');
+        } finally {
+            isSubmitting = false;
+        }
+    };
+
+    async function submitQrCode(rawCode) {
+        const code = String(rawCode || '').trim().toUpperCase();
+        if (!code) return;
+
+        const now = Date.now();
+        const lastTime = recentScans.get(code) || 0;
+        if (now - lastTime < SCAN_COOLDOWN_MS || isSubmitting) {
+            return;
+        }
+
+        recentScans.set(code, now);
+        isSubmitting = true;
+        setStatus('Verifying ' + code + '...', '');
+
+        try {
+            const response = await fetch('/api/qr_attendance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ qr_code: code })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setStatus((data && data.message) || 'Invalid QR code or student not found.', 'error');
+                return;
+            }
+
+            if (data.status === 'ALREADY_MARKED') {
+                setStatus('ℹ️ ' + data.message, 'warn');
+            } else {
+                setStatus('✅ ' + data.message, 'success');
+            }
+
+            showStudentResult(data.student, data.status);
+            addSessionScan(data.student, data.status);
+            await refreshTodayOverview();
+        } catch (err) {
+            setStatus('Network error while marking attendance. Please try again.', 'error');
+        } finally {
+            isSubmitting = false;
+        }
+    }
+
+    async function scanFrame() {
+        if (!isScannerRunning || !barcodeDetector || !videoEl) return;
+
+        if (videoEl.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA && !isSubmitting) {
+            try {
+                const barcodes = await barcodeDetector.detect(videoEl);
+                if (barcodes && barcodes.length > 0) {
+                    const rawValue = barcodes[0].rawValue;
+                    if (rawValue) {
+                        await submitQrCode(rawValue);
+                    }
+                }
+            } catch (_err) {
+                // Ignore transient frame detection errors
+            }
+        }
+
+        if (isScannerRunning) {
+            scanTimer = window.setTimeout(scanFrame, 180);
+        }
+    }
+
+    window.startScanner = async function startScanner() {
+        if (isScannerRunning) return;
+
+        if (!('BarcodeDetector' in window)) {
+            setStatus('Native BarcodeDetector is not available in this browser. Please use Android Chrome or enter BCA-2026-XXXX manually below.', 'error');
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setStatus('Camera API unavailable. Ensure you are on HTTPS in Android Chrome or use manual input below.', 'error');
+            return;
+        }
+
+        try {
+            barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
+        } catch (_err) {
+            setStatus('Failed to initialize QR BarcodeDetector. Please use manual input below.', 'error');
+            return;
+        }
+
+        startBtn.disabled = true;
+        setStatus('Requesting camera permission...', '');
+
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            });
+
+            videoEl.srcObject = mediaStream;
+            await videoEl.play();
+
+            placeholderEl.style.display = 'none';
+            videoEl.style.display = 'block';
+            reticleEl.style.display = 'block';
+            stopBtn.disabled = false;
+            isScannerRunning = true;
+
+            setStatus('Camera active. Point at a student BCA-2026-XXXX QR code.', '');
+            scanFrame();
+        } catch (err) {
+            startBtn.disabled = false;
+            stopScanner();
+            if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+                setStatus('Camera permission denied. Please allow camera access in Chrome site settings or use manual input below.', 'error');
+            } else if (err && err.name === 'NotFoundError') {
+                setStatus('No camera found on this device. Please use manual input below.', 'error');
+            } else {
+                setStatus('Unable to start camera (' + ((err && err.message) || 'Unknown error') + '). Use manual input below.', 'error');
+            }
+        }
+    };
+
+    window.stopScanner = function stopScanner() {
+        isScannerRunning = false;
+        if (scanTimer) {
+            clearTimeout(scanTimer);
+            scanTimer = null;
+        }
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(function (track) {
+                track.stop();
+            });
+            mediaStream = null;
+        }
+        if (videoEl) {
+            videoEl.pause();
+            videoEl.srcObject = null;
+            videoEl.style.display = 'none';
+        }
+        reticleEl.style.display = 'none';
+        placeholderEl.style.display = 'block';
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+    };
+
+    window.handleManualSubmit = async function handleManualSubmit(event) {
+        event.preventDefault();
+        const code = manualInputEl.value.trim().toUpperCase();
+        if (!code) return;
+        recentScans.delete(code);
+        await submitQrCode(code);
+        manualInputEl.value = '';
+    };
+
+    // Proper camera cleanup when tab is hidden or page unloads
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden && isScannerRunning) {
+            window.stopScanner();
+            setStatus('Camera paused because tab moved to background. Tap "Start Camera" to resume.', 'warn');
+        }
+    });
+
+    window.addEventListener('pagehide', function () {
+        window.stopScanner();
+    });
+
+    window.addEventListener('beforeunload', function () {
+        window.stopScanner();
+    });
+
+    // Initial render of student search and today's attendance list
+    renderStudentSearchList();
+    renderTodayAttendanceList();
+})();
+</script>
+</body>
+</html>

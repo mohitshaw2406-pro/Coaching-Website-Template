@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Fee Reports — Brilliance Coaching Academy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+    <style>
+        .report-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+        .report-header h1 {
+            margin: 0 0 4px 0;
+            font-size: 1.55rem;
+        }
+        .report-header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.92rem;
+        }
+        .btn-csv {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            background: #059669;
+            color: #ffffff;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.22);
+        }
+        .btn-csv:hover {
+            background: #047857;
+        }
+        .filter-bar {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 18px 20px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 24px;
+        }
+        .filter-form {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto auto;
+            gap: 12px;
+            align-items: end;
+        }
+        .filter-field label {
+            display: block;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+        .filter-field input,
+        .filter-field select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-family: inherit;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+        .btn-filter {
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: none;
+            background: #4f46e5;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            height: 39px;
+        }
+        .btn-filter:hover {
+            background: #4338ca;
+        }
+        .btn-reset {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 14px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 600;
+            font-size: 0.86rem;
+            text-decoration: none;
+            height: 39px;
+            box-sizing: border-box;
+        }
+        .btn-reset:hover {
+            background: #e2e8f0;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+            gap: 16px;
+            margin-bottom: 26px;
+        }
+        .summary-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 18px 20px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+        .summary-card h3 {
+            margin: 0 0 6px 0;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+        }
+        .summary-card .val {
+            margin: 0;
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .summary-card .val.collected { color: #16a34a; }
+        .summary-card .val.pending { color: #dc2626; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .status-paid { background: #dcfce7; color: #15803d; }
+        .status-partial { background: #fef3c7; color: #b45309; }
+        .status-pending { background: #fee2e2; color: #b91c1c; }
+        .status-notset { background: #e2e8f0; color: #475569; }
+        .mono-code {
+            font-family: 'Consolas', 'SFMono-Regular', Menlo, monospace;
+            font-weight: 700;
+            color: #1d4ed8;
+        }
+        .action-link {
+            display: inline-block;
+            padding: 5px 11px;
+            border-radius: 6px;
+            background: #4f46e5;
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .action-link:hover {
+            background: #4338ca;
+        }
+        .receipt-link {
+            display: inline-block;
+            padding: 5px 11px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #0f2547 0%, #1d4ed8 100%);
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        @media (max-width: 820px) {
+            .filter-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>✦ Brilliance Coaching Academy</h2>
+            <p>Admin Panel</p>
+        </div>
+        <div class="sidebar-nav">
+            <a href="{{ url_for('admin_dashboard') }}"><span class="nav-icon">📩</span> Enquiries</a>
+            <a href="{{ url_for('students_section') }}"><span class="nav-icon">🎓</span> Students</a>
+            <a href="/admin/fee_reports" style="background:rgba(108,99,255,0.85); color:white;"><span class="nav-icon">📊</span> Fee Reports</a>
+            <a href="{{ url_for('manage_teachers') }}"><span class="nav-icon">👨‍🏫</span> Teachers</a>
+            <a href="{{ url_for('manage_timetable') }}"><span class="nav-icon">📅</span> Timetable</a>
+            <a href="{{ url_for('change_password') }}"><span class="nav-icon">🔑</span> Change Password</a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout"><span class="nav-icon">🚪</span> Logout</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="report-header">
+            <div>
+                <h1>📊 Student Fee Reports</h1>
+                <p>Filter, search, and export student-wise fee status and payment records.</p>
+            </div>
+            <a
+                href="/admin/fee_reports?export=csv&search={{ search_query | urlencode }}&class_filter={{ class_filter | urlencode }}&status_filter={{ status_filter | urlencode }}"
+                class="btn-csv"
+            >
+                ⬇️ Export Displayed Report (CSV)
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="filter-bar">
+            <form method="GET" action="/admin/fee_reports" class="filter-form">
+                <div class="filter-field">
+                    <label for="search">Search Student / BCA ID / Mobile</label>
+                    <input
+                        type="text"
+                        id="search"
+                        name="search"
+                        value="{{ search_query }}"
+                        placeholder="🔍 Name, BCA-2026-XXXX, or mobile..."
+                    >
+                </div>
+                <div class="filter-field">
+                    <label for="class_filter">Class</label>
+                    <select id="class_filter" name="class_filter">
+                        <option value="">All Classes</option>
+                        {% for i in range(6, 13) %}
+                        <option value="{{ i }}" {% if class_filter == (i | string) %}selected{% endif %}>Class {{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="status_filter">Payment Status</label>
+                    <select id="status_filter" name="status_filter">
+                        <option value="">All Statuses</option>
+                        <option value="Paid" {% if status_filter == 'Paid' %}selected{% endif %}>Paid</option>
+                        <option value="Partial" {% if status_filter == 'Partial' %}selected{% endif %}>Partial</option>
+                        <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="Not Set" {% if status_filter == 'Not Set' %}selected{% endif %}>Not Set</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-filter">Apply Filters</button>
+                <a href="/admin/fee_reports" class="btn-reset">Reset</a>
+            </form>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>Filtered Expected Fees</h3>
+                <p class="val">₹{{ totals.total_expected | round(2) }}</p>
+            </div>
+            <div class="summary-card">
+                <h3>Filtered Collected</h3>
+                <p class="val collected">₹{{ totals.total_collected | round(2) }}</p>
+            </div>
+            <div class="summary-card">
+                <h3>Filtered Pending Balance</h3>
+                <p class="val pending">₹{{ totals.total_pending | round(2) }}</p>
+            </div>
+            <div class="summary-card">
+                <h3>Matching Students ({{ records | length }})</h3>
+                <p style="margin: 6px 0 0; font-size: 0.84rem; font-weight: 700; color: #334155;">
+                    Paid: {{ totals.paid_count }} · Partial: {{ totals.partial_count }} · Pending: {{ totals.pending_count }}
+                    {% if totals.not_set_count > 0 %} · Not Set: {{ totals.not_set_count }}{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>🎓 Student-Wise Fee Report ({{ records | length }})</h2>
+        </div>
+
+        <div class="table-wrapper" style="margin-bottom: 32px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>Mobile</th>
+                        <th>Total Fee</th>
+                        <th>Paid Amount</th>
+                        <th>Pending Balance</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr>
+                        <td class="mono-code">{{ r['unique_student_id'] }}</td>
+                        <td><strong>{{ r['name'] }}</strong></td>
+                        <td>Class {{ r['class_name'] }}</td>
+                        <td>{{ r['mobile'] }}</td>
+                        <td>₹{{ r['total_fee'] | round(2) }}</td>
+                        <td style="color:#15803d; font-weight:700;">₹{{ r['paid_amount'] | round(2) }}</td>
+                        <td style="color:#b91c1c; font-weight:700;">₹{{ r['pending_balance'] | round(2) }}</td>
+                        <td>
+                            {% if r['status'] == 'Paid' %}
+                                <span class="status-badge status-paid">Paid</span>
+                            {% elif r['status'] == 'Partial' %}
+                                <span class="status-badge status-partial">Partial</span>
+                            {% elif r['status'] == 'Pending' %}
+                                <span class="status-badge status-pending">Pending</span>
+                            {% else %}
+                                <span class="status-badge status-notset">Not Set</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/admin/student_fees/{{ r['id'] }}" class="action-link">Manage Fees</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" style="text-align:center; color:#64748b; padding:28px;">No student fee records match the selected filters.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-header">
+            <h2>📜 Matching Payment History ({{ filtered_payments | length }})</h2>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Receipt No</th>
+                        <th>Date</th>
+                        <th>Student</th>
+                        <th>Class</th>
+                        <th>Mode</th>
+                        <th>Amount Paid</th>
+                        <th>Remarks</th>
+                        <th>Collected By</th>
+                        <th>Receipt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in filtered_payments %}
+                    <tr>
+                        <td class="mono-code">{{ p['receipt_no'] }}</td>
+                        <td>{{ p['payment_date'] }}</td>
+                        <td><strong>{{ p['student_name'] }}</strong> ({{ p['unique_student_id'] }})</td>
+                        <td>Class {{ p['class_name'] }}</td>
+                        <td>{{ p['payment_mode'] }}</td>
+                        <td><strong>₹{{ p['amount'] | round(2) }}</strong></td>
+                        <td>{{ p['remarks'] }}</td>
+                        <td>{{ p['collected_by'] }}</td>
+                        <td>
+                            <a href="/fee_receipt/{{ p['id'] }}" class="receipt-link">View Receipt</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" style="text-align:center; color:#64748b; padding:28px;">No payment transactions found for the current filter selection.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

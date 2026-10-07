@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Brilliance Coaching Academy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .about-section { padding: 80px 20px; text-align: center; background: #fff; }
+        .about-content { max-width: 800px; margin: auto; line-height: 1.8; color: #444; }
+        .about-card { background: #f4f7fb; border-radius: 20px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .highlight { color: #764ba2; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">Brilliance Coaching Academy</div>
+        <nav><a href="/">Home</a></nav>
+    </header>
+
+    <div class="about-section">
+        <div class="about-content">
+            <div class="about-card glow">
+                <h1>Our Mission</h1>
+                <p>At <span class="highlight">Brilliance Coaching Academy</span>, we believe that every student has the potential to shine. Since our founding, we have focused on providing high-quality, conceptual education to students from Class 6 to 12.</p>
+                <p>Our expert faculty specializes in Science, Mathematics, and Computer Science, helping students not just to pass exams, but to master the subjects for a successful future.</p>
+            </div>
+        </div>
+    </div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

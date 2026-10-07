@@ -1,0 +1,10 @@
+{
+  "name": "Brilliance Coaching Academy",
+  "description": "Comprehensive coaching institute portal for students, teachers, and administrators featuring attendance tracking, timetables, study materials, notices, and admissions enquiries.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ],
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

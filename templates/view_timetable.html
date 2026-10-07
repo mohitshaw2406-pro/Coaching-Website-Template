@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Timetable</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/student_dashboard.css') }}">
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <h2>Student Panel</h2>
+        <a href="{{ url_for('student_dashboard') }}">🏠 Dashboard</a>
+        <a href="{{ url_for('my_courses') }}">📚 My Courses</a>
+        <a href="{{ url_for('view_timetable') }}" style="background:#334155">🕒 Timetable</a>
+        <a href="{{ url_for('view_attendance') }}">📝 My Attendance</a>
+        <a href="{{ url_for('ask_doubt') }}">❓ Ask a Question</a>
+        <a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a>
+    </aside>
+    <main class="main">
+        <h1>Weekly Schedule — Class {{ session['student_class'] }}</h1>
+        <table>
+            <tr style="background:#764ba2; color:white">
+                <th>Day</th><th>Time</th><th>Subject</th><th>Teacher</th>
+            </tr>
+            {% for row in timetable %}
+            <tr>
+                <td>{{ row['day'] }}</td>
+                <td>{{ row['time'] }}</td>
+                <td>{{ row['subject'] }}</td>
+                <td>{{ row['teacher_name'] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% if not timetable %}
+        <p style="color:#666; margin-top:30px; text-align:center;">No timetable added yet.</p>
+        {% endif %}
+    </main>
+</div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

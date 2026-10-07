@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Fees — {{ student['name'] }} ({{ unique_student_id }})</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+    <style>
+        .fee-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .fee-header-meta h1 {
+            margin: 0 0 4px 0;
+            font-size: 1.55rem;
+        }
+        .fee-header-meta p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #1e293b;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .btn-back:hover {
+            background: #f8fafc;
+        }
+        .fee-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 16px;
+            margin-bottom: 26px;
+        }
+        .fee-stat-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+        .fee-stat-card h3 {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            margin: 0 0 8px 0;
+        }
+        .fee-stat-card .stat-val {
+            font-size: 1.55rem;
+            font-weight: 800;
+            margin: 0;
+            color: #0f172a;
+        }
+        .stat-val.paid { color: #16a34a; }
+        .stat-val.pending { color: #dc2626; }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .status-paid { background: #dcfce7; color: #15803d; }
+        .status-partial { background: #fef3c7; color: #b45309; }
+        .status-pending { background: #fee2e2; color: #b91c1c; }
+        .status-notset { background: #e2e8f0; color: #475569; }
+
+        .fee-forms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+        .fee-panel {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+        .fee-panel h3 {
+            margin: 0 0 14px 0;
+            color: #4f46e5;
+            font-size: 1.05rem;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-family: inherit;
+            font-size: 0.92rem;
+            box-sizing: border-box;
+        }
+        .btn-submit {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #4f46e5;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.92rem;
+            cursor: pointer;
+        }
+        .btn-submit:hover {
+            background: #4338ca;
+        }
+        .btn-submit.green {
+            background: #059669;
+        }
+        .btn-submit.green:hover {
+            background: #047857;
+        }
+        .flash-success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+        .flash-error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+        .receipt-code {
+            font-family: 'Consolas', 'SFMono-Regular', Menlo, monospace;
+            font-weight: 700;
+            color: #1d4ed8;
+        }
+        .receipt-link {
+            display: inline-block;
+            padding: 5px 11px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #0f2547 0%, #1d4ed8 100%);
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .receipt-link:hover {
+            opacity: 0.92;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <h2>Admin Panel</h2>
+        <a href="{{ url_for('admin_dashboard') }}">📩 Enquiries</a>
+        <a href="{{ url_for('students_section') }}" style="background:#334155">🎓 Students</a>
+        <a href="{{ url_for('manage_teachers') }}">👨‍🏫 Teachers</a>
+        <a href="{{ url_for('manage_timetable') }}">📅 Timetable</a>
+        <a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a>
+    </aside>
+
+    <main class="main">
+        <div class="fee-header-bar">
+            <div class="fee-header-meta">
+                <h1>💰 Fee Management — {{ student['name'] }}</h1>
+                <p>Student ID: <strong>{{ unique_student_id }}</strong> · Class {{ student['class_name'] }} · Mobile: {{ student['email'] if student['email'] else '—' }}</p>
+            </div>
+            <a href="{{ url_for('students_section') }}" class="btn-back">← Back to Students</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="fee-summary-grid">
+            <div class="fee-stat-card">
+                <h3>Total Course Fee</h3>
+                <p class="stat-val">₹{{ summary.total_fee | round(2) }}</p>
+            </div>
+            <div class="fee-stat-card">
+                <h3>Total Paid</h3>
+                <p class="stat-val paid">₹{{ summary.paid_amount | round(2) }}</p>
+            </div>
+            <div class="fee-stat-card">
+                <h3>Pending Balance</h3>
+                <p class="stat-val pending">₹{{ summary.pending_balance | round(2) }}</p>
+            </div>
+            <div class="fee-stat-card">
+                <h3>Payment Status</h3>
+                <p style="margin: 4px 0 0;">
+                    {% if summary.status == 'Paid' %}
+                        <span class="status-badge status-paid">Paid</span>
+                    {% elif summary.status == 'Partial' %}
+                        <span class="status-badge status-partial">Partial</span>
+                    {% elif summary.status == 'Pending' %}
+                        <span class="status-badge status-pending">Pending</span>
+                    {% else %}
+                        <span class="status-badge status-notset">Not Set</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="fee-forms-grid">
+            <div class="fee-panel">
+                <h3>⚙️ Set / Update Total Fee</h3>
+                <form method="POST" action="/admin/student_fees/{{ student['id'] }}">
+                    <input type="hidden" name="action" value="set_total_fee">
+                    <div class="form-group">
+                        <label for="total_fee">Total Fee Amount (₹)</label>
+                        <input
+                            type="number"
+                            id="total_fee"
+                            name="total_fee"
+                            step="0.01"
+                            min="{{ summary.paid_amount }}"
+                            value="{{ summary.total_fee }}"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn-submit">Save Total Fee</button>
+                </form>
+            </div>
+
+            <div class="fee-panel">
+                <h3>➕ Record Manual Payment</h3>
+                <form method="POST" action="/admin/student_fees/{{ student['id'] }}">
+                    <input type="hidden" name="action" value="record_payment">
+                    <div class="form-group">
+                        <label for="amount">Amount Received (₹)</label>
+                        <input
+                            type="number"
+                            id="amount"
+                            name="amount"
+                            step="0.01"
+                            min="0.01"
+                            {% if summary.pending_balance > 0 %}max="{{ summary.pending_balance }}"{% endif %}
+                            placeholder="Enter payment amount"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="payment_mode">Payment Mode</label>
+                        <select id="payment_mode" name="payment_mode" required>
+                            <option value="Cash">Cash</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="payment_date">Payment Date</label>
+                        <input type="date" id="payment_date" name="payment_date" value="{{ today }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="remarks">Remarks (Optional)</label>
+                        <input type="text" id="remarks" name="remarks" placeholder="e.g., Installment 1 / Transaction Ref">
+                    </div>
+                    <button type="submit" class="btn-submit green">Record Payment</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>📜 Payment History</h2>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr style="background:#764ba2; color:white;">
+                        <th>Receipt No</th>
+                        <th>Payment Date</th>
+                        <th>Mode</th>
+                        <th>Amount Paid</th>
+                        <th>Remarks</th>
+                        <th>Collected By</th>
+                        <th>Receipt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in summary.payments %}
+                    <tr>
+                        <td class="receipt-code">{{ p['receipt_no'] }}</td>
+                        <td>{{ p['payment_date'] }}</td>
+                        <td>{{ p['payment_mode'] }}</td>
+                        <td><strong>₹{{ p['amount'] | round(2) }}</strong></td>
+                        <td>{{ p['remarks'] if p['remarks'] else '—' }}</td>
+                        <td>{{ p['collected_by'] }}</td>
+                        <td><a href="/fee_receipt/{{ p['id'] }}" class="receipt-link">View Receipt</a></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align:center; color:#64748b; padding:24px;">No fee payments recorded for this student yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

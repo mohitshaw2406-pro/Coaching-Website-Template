@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Enquiry</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .enquiry-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f4f7fb; padding: 20px; }
+        .enquiry-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(118,75,162,0.15); width: 100%; max-width: 500px; text-align: center; }
+        .enquiry-card h2 { color: #764ba2; margin-bottom: 30px; font-size: 2.2rem; }
+        .enquiry-card input, .enquiry-card textarea, .enquiry-card select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; box-sizing: border-box; }
+        .enquiry-card textarea { height: 100px; resize: none; }
+        .enquiry-card button { width: 100%; padding: 15px; background: linear-gradient(90deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .enquiry-card button:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(118,75,162,0.3); }
+        .back-home { margin-top: 20px; display: block; color: #764ba2; text-decoration: none; font-weight: 600; }
+        .flash-msg { padding: 10px; margin-bottom: 15px; border-radius: 8px; font-size: 0.85rem; }
+        .success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <div class="enquiry-container">
+        <div class="enquiry-card glow">
+            <h2>Course Enquiry</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}
+                    <div class="flash-msg {{ category }}">{{ message }}</div>
+                {% endfor %}{% endif %}
+            {% endwith %}
+            <form action="{{ url_for('enquiry') }}" method="POST">
+                <input type="text" name="name" placeholder="Your Full Name" required>
+                <input type="email" name="email" placeholder="Email Address" required>
+                <textarea name="message" placeholder="Which course are you interested in?" required></textarea>
+                <button type="submit">Submit Enquiry</button>
+            </form>
+            <a href="{{ url_for('home') }}" class="back-home">← Back to Home</a>
+        </div>
+    </div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

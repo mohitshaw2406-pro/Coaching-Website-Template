@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Students</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+    <style>
+        .search-box { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 10px; border: 1px solid #ddd; }
+        .action-btns { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .id-card-link { background: linear-gradient(135deg, #0f2547 0%, #1d4ed8 100%); color: #ffffff; font-weight: 600; font-size: 0.85rem; text-decoration: none; border: 1px solid #d4af37; padding: 4px 10px; border-radius: 5px; white-space: nowrap; }
+        .id-card-link:hover { opacity: 0.92; }
+        .fees-link { background: #059669; color: #ffffff; font-weight: 600; font-size: 0.85rem; text-decoration: none; padding: 4px 10px; border-radius: 5px; white-space: nowrap; }
+        .fees-link:hover { background: #047857; }
+        .edit-link { color: #764ba2; font-weight: bold; text-decoration: none; border: 1px solid #764ba2; padding: 4px 8px; border-radius: 5px; }
+        .del-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .add-form { background: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .add-form h3 { color: #764ba2; margin-bottom: 15px; }
+        .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        .form-row input, .form-row select { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-family: inherit; flex: 1; min-width: 150px; }
+        .form-row button { padding: 10px 24px; background: #764ba2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+        .form-row button:hover { background: #5a3580; }
+        .flash-success { background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+        .flash-error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <h2>Admin Panel</h2>
+        <a href="{{ url_for('admin_dashboard') }}">📩 Enquiries</a>
+        <a href="{{ url_for('students_section') }}" style="background:#334155">🎓 Students</a>
+        <a href="{{ url_for('manage_teachers') }}">👨‍🏫 Teachers</a>
+        <a href="{{ url_for('manage_timetable') }}">📅 Timetable</a>
+        <a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a>
+    </aside>
+    <main class="main">
+        <h1>Student Records</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="add-form">
+            <h3>➕ Add New Student</h3>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-row">
+                    <input type="text" name="name" placeholder="Full Name" required>
+                    <select name="class_name" required>
+                        <option value="">Select Class</option>
+                        {% for i in range(6, 13) %}
+                        <option value="{{ i }}">Class {{ i }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="tel" name="mobile" placeholder="Mobile Number" required>
+                    <input type="password" name="password" placeholder="Set Password" required>
+                    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" title="Profile Photo (optional, max 2MB)">
+                    <button type="submit">Add Student</button>
+                </div>
+            </form>
+        </div>
+
+        <input type="text" id="studentSearch" class="search-box" placeholder="🔍 Search by name or class...">
+
+        <table id="studentTable">
+            <tr style="background:#764ba2; color:white;">
+                <th>ID</th><th>Name</th><th>Class</th><th>Mobile</th><th>Actions</th>
+            </tr>
+            {% for s in students %}
+            <tr>
+                <td>{{ s['id'] }}</td>
+                <td>{{ s['name'] }}</td>
+                <td>Class {{ s['class_name'] }}</td>
+                <td>{{ s['email'] if s['email'] else '—' }}</td>
+                <td class="action-btns">
+                    <a href="{{ url_for('student_id_card', id=s['id']) }}" class="id-card-link">View ID Card</a>
+                    <a href="/admin/student_fees/{{ s['id'] }}" class="fees-link">Fees</a>
+                    <a href="{{ url_for('edit_student', id=s['id']) }}" class="edit-link">Edit</a>
+                    <form action="{{ url_for('delete_student', id=s['id']) }}" method="POST" style="display:inline;">
+                        <button class="del-btn" onclick="return confirm('Remove this student?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% if not students %}
+        <p style="color:#666; margin-top:20px; text-align:center;">No students registered yet.</p>
+        {% endif %}
+    </main>
+</div>
+
+<script>
+    document.getElementById('studentSearch').addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#studentTable tr:not(:first-child)');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+        });
+    });
+</script>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

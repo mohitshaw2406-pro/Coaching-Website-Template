@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Fees — Brilliance Coaching Academy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/student_dashboard.css') }}">
+    <style>
+        .fee-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .fee-stat-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+        .fee-stat-card h3 {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            margin: 0 0 8px 0;
+        }
+        .fee-stat-card .stat-val {
+            font-size: 1.55rem;
+            font-weight: 800;
+            margin: 0;
+            color: #0f172a;
+        }
+        .stat-val.paid { color: #16a34a; }
+        .stat-val.pending { color: #dc2626; }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .status-paid { background: #dcfce7; color: #15803d; }
+        .status-partial { background: #fef3c7; color: #b45309; }
+        .status-pending { background: #fee2e2; color: #b91c1c; }
+        .status-notset { background: #e2e8f0; color: #475569; }
+        .receipt-code {
+            font-family: 'Consolas', 'SFMono-Regular', Menlo, monospace;
+            font-weight: 700;
+            color: #1d4ed8;
+        }
+        .receipt-link {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #0f2547 0%, #1d4ed8 100%);
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .receipt-link:hover {
+            opacity: 0.92;
+        }
+        .flash-success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+        .flash-error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>✦ Brilliance Coaching Academy</h2>
+            <p>Student Portal</p>
+        </div>
+        <div class="sidebar-nav">
+            <a href="{{ url_for('student_dashboard') }}"><span class="nav-icon">🏠</span> Dashboard</a>
+            <a href="{{ url_for('my_courses') }}"><span class="nav-icon">📚</span> Study Materials</a>
+            <a href="{{ url_for('view_timetable') }}"><span class="nav-icon">🕒</span> My Timetable</a>
+            <a href="{{ url_for('view_attendance') }}"><span class="nav-icon">📝</span> My Attendance</a>
+            <a href="{{ url_for('my_fees') }}" style="background:rgba(108,99,255,0.85); color:white;"><span class="nav-icon">💰</span> My Fees</a>
+            <a href="{{ url_for('ask_doubt') }}"><span class="nav-icon">❓</span> Ask a Question</a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout"><span class="nav-icon">🚪</span> Logout</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="page-header">
+            <h1>💰 My Fee Details & Receipts</h1>
+            <p>Student: <strong>{{ student['name'] }}</strong> · ID: <strong>{{ unique_student_id }}</strong> · Class {{ student['class_name'] }}</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="fee-summary-grid">
+            <div class="fee-stat-card">
+                <h3>Total Course Fee</h3>
+                <p class="stat-val">₹{{ summary.total_fee | round(2) }}</p>
+            </div>
+            <div class="fee-stat-card">
+                <h3>Paid Amount</h3>
+                <p class="stat-val paid">₹{{ summary.paid_amount | round(2) }}</p>
+            </div>
+            <div class="fee-stat-card">
+                <h3>Pending Balance</h3>
+                <p class="stat-val pending">₹{{ summary.pending_balance | round(2) }}</p>
+            </div>
+            <div class="fee-stat-card">
+                <h3>Payment Status</h3>
+                <p style="margin: 4px 0 0;">
+                    {% if summary.status == 'Paid' %}
+                        <span class="status-badge status-paid">Paid</span>
+                    {% elif summary.status == 'Partial' %}
+                        <span class="status-badge status-partial">Partial</span>
+                    {% elif summary.status == 'Pending' %}
+                        <span class="status-badge status-pending">Pending</span>
+                    {% else %}
+                        <span class="status-badge status-notset">Not Set</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>📜 My Payment History & Receipts</h2>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr style="background:#764ba2; color:white;">
+                        <th>Receipt No</th>
+                        <th>Payment Date</th>
+                        <th>Payment Mode</th>
+                        <th>Amount Paid</th>
+                        <th>Remarks</th>
+                        <th>Receipt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in summary.payments %}
+                    <tr>
+                        <td class="receipt-code">{{ p['receipt_no'] }}</td>
+                        <td>{{ p['payment_date'] }}</td>
+                        <td>{{ p['payment_mode'] }}</td>
+                        <td><strong>₹{{ p['amount'] | round(2) }}</strong></td>
+                        <td>{{ p['remarks'] if p['remarks'] else '—' }}</td>
+                        <td>
+                            <a href="/fee_receipt/{{ p['id'] }}" class="receipt-link">View / Print Receipt</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align:center; color:#64748b; padding:24px;">No fee payments recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

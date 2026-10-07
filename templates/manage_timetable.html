@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Timetable</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <h2>Admin Panel</h2>
+        <a href="{{ url_for('admin_dashboard') }}">📩 Enquiries</a>
+        <a href="{{ url_for('students_section') }}">🎓 Students</a>
+        <a href="{{ url_for('manage_teachers') }}">👨‍🏫 Teachers</a>
+        <a href="{{ url_for('manage_timetable') }}" style="background:#334155">📅 Timetable</a>
+        <a href="{{ url_for('logout') }}" class="logout">🚪 Logout</a>
+    </aside>
+    <main class="main">
+        <h1>Timetable Management</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+                <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <div style="background:white; padding:24px; border-radius:12px; margin-bottom:24px; box-shadow:0 4px 12px rgba(0,0,0,0.06);">
+            <h3 style="color:#764ba2; margin-bottom:16px;">➕ Add Slot</h3>
+            <form method="POST" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                <input type="text" name="class_name" placeholder="Class (e.g. 12)" required style="padding:10px; border-radius:8px; border:1px solid #ddd; font-family:inherit; flex:1; min-width:100px;">
+                <select name="day" style="padding:10px; border-radius:8px; border:1px solid #ddd; font-family:inherit;">
+                    <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+                    <option>Thursday</option><option>Friday</option><option>Saturday</option>
+                </select>
+                <input type="text" name="time" placeholder="Time (e.g. 10:00 AM)" required style="padding:10px; border-radius:8px; border:1px solid #ddd; font-family:inherit; flex:1; min-width:130px;">
+                <input type="text" name="subject" placeholder="Subject" required style="padding:10px; border-radius:8px; border:1px solid #ddd; font-family:inherit; flex:1; min-width:120px;">
+                <input type="text" name="teacher" placeholder="Teacher Name" required style="padding:10px; border-radius:8px; border:1px solid #ddd; font-family:inherit; flex:1; min-width:130px;">
+                <button type="submit" style="padding:10px 24px; background:#764ba2; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; white-space:nowrap;">Add Slot</button>
+            </form>
+        </div>
+
+        <form method="GET" style="margin-bottom:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="text" name="filter_class" placeholder="Filter by Class (e.g. 10)" value="{{ selected_class or '' }}" style="padding:10px; border-radius:8px; border:1px solid #ddd; font-family:inherit;">
+            <button type="submit" style="padding:10px 20px; background:#764ba2; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Filter</button>
+            <a href="{{ url_for('manage_timetable') }}" style="color:#764ba2; font-weight:600; text-decoration:none;">✕ Clear</a>
+        </form>
+
+        <table>
+            <tr style="background:#764ba2; color:white;">
+                <th>Class</th><th>Day</th><th>Time</th><th>Subject</th><th>Teacher</th><th>Action</th>
+            </tr>
+            {% for row in timetable %}
+            <tr>
+                <td>{{ row['class_name'] }}</td>
+                <td>{{ row['day'] }}</td>
+                <td>{{ row['time'] }}</td>
+                <td>{{ row['subject'] }}</td>
+                <td>{{ row['teacher_name'] }}</td>
+                <td>
+                    <form action="{{ url_for('delete_timetable', id=row['id']) }}" method="POST">
+                        <button style="color:red; background:none; border:none; cursor:pointer; font-weight:600;">🗑 Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% if not timetable %}
+        <p style="color:#666; margin-top:20px; text-align:center;">No timetable entries yet.</p>
+        {% endif %}
+    </main>
+</div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

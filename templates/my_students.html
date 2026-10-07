@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Students — Brilliance Coaching Academy</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/teacher_dashboard.css') }}">
+</head>
+<body>
+<div class="dashboard">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>✦ Brilliance Academy</h2>
+            <p>Teacher Portal</p>
+        </div>
+        <div class="sidebar-nav">
+            <a href="{{ url_for('teacher_dashboard') }}"><span class="nav-icon">🏠</span> Dashboard</a>
+            <a href="{{ url_for('mark_attendance') }}"><span class="nav-icon">📝</span> Mark Attendance</a>
+            <a href="{{ url_for('upload_notes') }}"><span class="nav-icon">📤</span> Upload Notes</a>
+            <a href="{{ url_for('add_notice') }}"><span class="nav-icon">📢</span> Post Notice</a>
+            <a href="{{ url_for('my_students') }}" style="background:rgba(108,99,255,0.85); color:white;"><span class="nav-icon">👥</span> My Students</a>
+            <a href="/teacher_doubts"><span class="nav-icon">❓</span> Doubts</a>
+            <a href="{{ url_for('change_password') }}"><span class="nav-icon">🔑</span> Change Password</a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout"><span class="nav-icon">🚪</span> Logout</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="page-header">
+            <h1>My Students 👥</h1>
+            <p>All students enrolled in your assigned classes.</p>
+        </div>
+
+        {% if students %}
+        <div style="margin-bottom: 16px;">
+            <input type="text" id="studentSearch" class="search-box" placeholder="Search by name or class...">
+        </div>
+        <div class="table-wrapper">
+            <table id="studentTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student Name</th>
+                        <th>Class</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td style="color:#9ca3c0; font-size:0.8rem;">{{ loop.index }}</td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div style="width:34px; height:34px; border-radius:50%; background:#ede9ff; color:#6C63FF; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; flex-shrink:0;">
+                                    {{ s['name'][0].upper() }}
+                                </div>
+                                <strong>{{ s['name'] }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            <span style="background:#ede9ff; color:#574fd6; padding:3px 12px; border-radius:99px; font-size:0.78rem; font-weight:600;">
+                                Class {{ s['class_name'] }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p style="margin-top:14px; color:#9ca3c0; font-size:0.82rem;">{{ students|length }} student{{ 's' if students|length != 1 }} found</p>
+
+        {% else %}
+        <div style="text-align:center; padding:60px 20px; background:white; border:1px solid #e4e7f0; border-radius:18px;">
+            <p style="font-size:2.5rem; margin-bottom:12px;">👥</p>
+            <h3 style="color:#1a1d2e; margin-bottom:8px;">No students found</h3>
+            <p style="color:#9ca3c0; font-size:0.9rem;">No students are assigned to your classes yet.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<script>
+document.getElementById('studentSearch') && document.getElementById('studentSearch').addEventListener('keyup', function() {
+    let filter = this.value.toLowerCase();
+    document.querySelectorAll('#studentTable tbody tr').forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+    });
+});
+</script>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

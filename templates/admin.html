@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+</head>
+<body>
+    <h2>Student Enquiries</h2>
+
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Course</th>
+        </tr>
+
+        {% for e in enquiries %}
+        <tr>
+            <td>{{ e[0] }}</td>
+            <td>{{ e[1] }}</td>
+            <td>{{ e[2] }}</td>
+            <td>{{ e[3] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
