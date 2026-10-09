@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Student Login - Brilliance Coaching Academy</title>
+    <title>Student Login - Your Coaching Name</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         /* Force dark mode compatibility */
@@ -29,7 +29,7 @@
     <div class="auth-container">
         <div class="auth-card">
             <h2>{% if 'register' in request.path %}Register{% else %}Login{% endif %}</h2>
-            <p class="subtitle">{% if 'register' in request.path %}Join Brilliance Academy 🎓{% else %}Welcome back! 👋{% endif %}</p>
+            <p class="subtitle">{% if 'register' in request.path %}Join Your Coaching Name 🎓{% else %}Welcome back! 👋{% endif %}</p>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}

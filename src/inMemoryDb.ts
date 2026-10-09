@@ -137,7 +137,7 @@ const initialStore: InMemoryStore = {
       day: 'Monday',
       time: '09:00 AM - 10:30 AM',
       subject: 'Mathematics',
-      teacher_name: 'teacher'
+      teacher_name: '[Faculty Name 1]'
     },
     {
       id: 2,
@@ -145,7 +145,7 @@ const initialStore: InMemoryStore = {
       day: 'Monday',
       time: '11:00 AM - 12:30 PM',
       subject: 'Science',
-      teacher_name: 'sharma'
+      teacher_name: '[Faculty Name 2]'
     },
     {
       id: 3,
@@ -153,7 +153,7 @@ const initialStore: InMemoryStore = {
       day: 'Monday',
       time: '10:00 AM - 11:30 AM',
       subject: 'Computer Science',
-      teacher_name: 'das'
+      teacher_name: '[Faculty Name 3]'
     },
     {
       id: 4,
@@ -161,7 +161,7 @@ const initialStore: InMemoryStore = {
       day: 'Tuesday',
       time: '09:00 AM - 10:30 AM',
       subject: 'Mathematics',
-      teacher_name: 'teacher'
+      teacher_name: '[Faculty Name 1]'
     }
   ],
   attendance: [

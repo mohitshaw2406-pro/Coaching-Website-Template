@@ -296,7 +296,7 @@
     <div class="sidebar">
         <div class="sidebar-brand">
             <h2>🎓 Teacher Portal</h2>
-            <p>Brilliance Coaching Academy</p>
+            <p>Your Coaching Name</p>
         </div>
         <nav class="sidebar-nav">
             <a href="{{ url_for('teacher_dashboard') }}"><span class="nav-icon">🏠</span><span>Dashboard</span></a>
@@ -352,7 +352,7 @@
                 </div>
 
                 <div id="scan-status" class="status-banner">
-                    Ready to scan. Format: <strong>BCA-2026-XXXX</strong>
+                    Ready to scan. Format: <strong>{{ student_id_prefix or 'COACH' }}-2026-XXXX</strong>
                 </div>
 
                 <div id="student-result" class="student-result-card">
@@ -373,9 +373,9 @@
                         <input
                             type="text"
                             id="manual-qr-input"
-                            placeholder="e.g. BCA-2026-0003"
-                            pattern="^BCA-2026-[0-9]{4,}$"
-                            title="Enter full ID in format BCA-2026-XXXX"
+                            placeholder="e.g. {{ student_id_prefix or 'COACH' }}-2026-0003"
+                            pattern="^(?:[A-Za-z0-9_-]+)-2026-[0-9]{4,}$"
+                            title="Enter full ID in format {{ student_id_prefix or 'COACH' }}-2026-XXXX (or BCA-2026-XXXX)"
                             style="flex:1;min-width:180px;text-transform:uppercase;"
                             required
                         >
@@ -413,7 +413,7 @@
                     <div>
                         <h3 style="font-size:1rem;font-weight:900;">🔍 Search Student (No ID Card)</h3>
                         <p style="font-size:0.78rem;color:var(--muted);font-weight:700;margin-top:2px;">
-                            Search by student name, numeric ID, or BCA-2026-XXXX to mark Present manually
+                            Search by student name, numeric ID, or {{ student_id_prefix or 'COACH' }}-2026-XXXX to mark Present manually
                         </p>
                     </div>
                 </div>
@@ -422,7 +422,7 @@
                     type="text"
                     id="student-search-input"
                     class="search-box"
-                    placeholder="Search student name, ID (e.g. 3 or BCA-2026-0003), or class..."
+                    placeholder="Search student name, ID (e.g. 3 or {{ student_id_prefix or 'COACH' }}-2026-0003), or class..."
                     oninput="renderStudentSearchList()"
                 >
 
@@ -925,7 +925,7 @@
         if (isScannerRunning) return;
 
         if (!('BarcodeDetector' in window)) {
-            setStatus('Native BarcodeDetector is not available in this browser. Please use Android Chrome or enter BCA-2026-XXXX manually below.', 'error');
+            setStatus('Native BarcodeDetector is not available in this browser. Please use Android Chrome or enter student ID manually below.', 'error');
             return;
         }
 
@@ -963,7 +963,7 @@
             stopBtn.disabled = false;
             isScannerRunning = true;
 
-            setStatus('Camera active. Point at a student BCA-2026-XXXX QR code.', '');
+            setStatus('Camera active. Point at a student QR code ({{ student_id_prefix or "COACH" }}-2026-XXXX).', '');
             scanFrame();
         } catch (err) {
             startBtn.disabled = false;

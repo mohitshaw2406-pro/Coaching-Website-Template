@@ -92,6 +92,25 @@ function parseNoteUpload(req: Request, res: Response, next: NextFunction) {
   });
 }
 
+// Configurable Student ID Prefix (defaults to 'COACH')
+const STUDENT_ID_PREFIX = (process.env.STUDENT_ID_PREFIX?.trim() || 'COACH').toUpperCase();
+
+function formatStudentId(studentId: number | string): string {
+  const sid = typeof studentId === 'number' ? studentId : parseInt(String(studentId), 10);
+  return `${STUDENT_ID_PREFIX}-2026-${String(sid).padStart(4, '0')}`;
+}
+
+function parseStudentId(rawCode: string): number | null {
+  const trimmed = String(rawCode || '').trim();
+  // Accepts configured prefix (e.g. COACH-2026-XXXX) as well as legacy BCA-2026-XXXX
+  const escapedPrefix = STUDENT_ID_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`^(?:${escapedPrefix}|BCA)-2026-(\\d{4,})$`, 'i');
+  const match = regex.exec(trimmed);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
 // Multer memory storage for student profile photos (max 2MB, images only)
 const ALLOWED_IMAGE_MIME_TYPES = new Set([
   'image/jpeg',
@@ -146,7 +165,7 @@ async function uploadStudentPhotoToCloudinary(file: Express.Multer.File): Promis
   }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  const folder = 'brilliance_students';
+  const folder = 'coaching_students';
   const paramsToSign = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
   const signature = crypto.createHash('sha1').update(paramsToSign).digest('hex');
   const body = new URLSearchParams({
@@ -174,7 +193,7 @@ async function uploadStudentPhotoToCloudinary(file: Express.Multer.File): Promis
 
 /**
  * Uploads study notes/documents (PDF, DOC, DOCX, PPT, PPTX, JPG, PNG) to Cloudinary
- * as RAW/document files in folder 'brilliance_notes' using memory-efficient multipart/form-data.
+ * as RAW/document files in folder 'coaching_notes' using memory-efficient multipart/form-data.
  */
 async function uploadNoteToCloudinary(file: Express.Multer.File): Promise<string> {
   if (!isAllowedNoteFile(file)) {
@@ -195,7 +214,7 @@ async function uploadNoteToCloudinary(file: Express.Multer.File): Promise<string
   }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  const folder = 'brilliance_notes';
+  const folder = 'coaching_notes';
   const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
   const publicId = `${Date.now()}_${sanitizedName}`;
 
@@ -239,11 +258,30 @@ async function uploadNoteToCloudinary(file: Express.Multer.File): Promise<string
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session management
+// Session management & secret configuration
+const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+const envSessionSecret = process.env.SECRET_KEY?.trim();
+
+if (isProduction && (!envSessionSecret || envSessionSecret.length < 16)) {
+  throw new Error(
+    'CRITICAL SECURITY CONFIGURATION: A strong SECRET_KEY environment variable (minimum 16 characters) is required in production to securely sign session cookies.'
+  );
+}
+
+// Development-only fallback secret (clearly logged; refused in production)
+const devFallbackSessionSecret = 'development_only_insecure_session_secret_change_in_production';
+if (!envSessionSecret) {
+  console.warn(
+    '[SECURITY NOTICE] SECRET_KEY is not defined in environment variables. Falling back to a development-only session secret. Configure SECRET_KEY for production deployments.'
+  );
+}
+
+const activeSessionSecret = envSessionSecret || devFallbackSessionSecret;
+
 app.use(
   (cookieSession as any)({
     name: 'session',
-    keys: [process.env.SECRET_KEY || 'brilliance_academy_key'],
+    keys: [activeSessionSecret],
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: 'lax',
     signed: false
@@ -337,6 +375,8 @@ nunjucksEnv.addGlobal('range', (start: number, end: number) => {
   for (let i = start; i < end; i++) arr.push(i);
   return arr;
 });
+
+nunjucksEnv.addGlobal('student_id_prefix', STUDENT_ID_PREFIX);
 
 // Flash Messages & Request Context Middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -691,8 +731,8 @@ app.get('/student_dashboard', (req, res) => {
   }
   const student = db.findStudentById(req.session.student_id);
   const unique_student_id = student
-    ? `BCA-2026-${String(student.id).padStart(4, '0')}`
-    : `BCA-2026-${String(req.session.student_id).padStart(4, '0')}`;
+    ? formatStudentId(student.id)
+    : formatStudentId(req.session.student_id);
   const academic_session = '2026-27';
   const qr_svg = generateStudentIdQrSvg(unique_student_id);
 
@@ -872,7 +912,7 @@ app.get('/admin/fee_reports', loginRequired('admin'), (req, res) => {
 
     for (const s of students) {
       const sid = Number(s.id);
-      const uniqueId = `BCA-2026-${String(sid).padStart(4, '0')}`;
+      const uniqueId = formatStudentId(sid);
       const studentPayments = paymentsByStudent.get(sid) || [];
       const totalFee = feeByStudent.get(sid) || 0;
       const paidAmt = Number(
@@ -1045,7 +1085,7 @@ function buildTodayAttendanceOverview(today: string) {
 
   const students = allStudents.map((s: any) => {
     const sid = Number(s.id);
-    const unique_id = `BCA-2026-${String(sid).padStart(4, '0')}`;
+    const unique_id = formatStudentId(sid);
     const rec = attendanceByStudentId.get(sid);
     return {
       id: sid,
@@ -1069,7 +1109,7 @@ function buildTodayAttendanceOverview(today: string) {
     return {
       id: rec.id,
       student_id: sid,
-      unique_id: st ? st.unique_id : `BCA-2026-${String(sid).padStart(4, '0')}`,
+      unique_id: st ? st.unique_id : formatStudentId(sid),
       name: st ? st.name : `Student #${sid}`,
       class_name: String(rec.class_name || (st ? st.class_name : '')),
       status: rec.status as 'Present' | 'Absent',
@@ -1086,6 +1126,7 @@ app.get('/scan_attendance', loginRequired('teacher'), (_req, res) => {
   const overview = buildTodayAttendanceOverview(today);
   res.renderTemplate('scan_attendance.html', {
     today,
+    student_id_prefix: STUDENT_ID_PREFIX,
     students_json: JSON.stringify(overview.students),
     today_attendance_json: JSON.stringify(overview.attendance)
   });
@@ -1160,7 +1201,7 @@ app.post('/api/attendance/correct', loginRequired('teacher'), (req, res) => {
       });
     }
 
-    const uniqueId = `BCA-2026-${String(student.id).padStart(4, '0')}`;
+    const uniqueId = formatStudentId(student.id);
     return res.status(200).json({
       status: 'CORRECTED',
       message: `${student.name} attendance corrected to ${newStatus}.`,
@@ -1221,19 +1262,11 @@ app.post('/api/qr_attendance', loginRequired('teacher'), (req, res) => {
   }
 
   const rawCode = String(req.body?.qr_code ?? req.body?.code ?? '').trim();
-  const match = /^BCA-2026-(\d{4,})$/.exec(rawCode);
-  if (!match) {
+  const studentId = parseStudentId(rawCode);
+  if (!studentId) {
     return res.status(400).json({
       status: 'INVALID_QR',
-      message: 'Invalid QR format. Expected BCA-2026-XXXX.'
-    });
-  }
-
-  const studentId = Number(match[1]);
-  if (!Number.isSafeInteger(studentId) || studentId <= 0) {
-    return res.status(400).json({
-      status: 'INVALID_QR',
-      message: 'Invalid student ID in QR code.'
+      message: `Invalid QR format. Expected ${STUDENT_ID_PREFIX}-2026-XXXX or BCA-2026-XXXX.`
     });
   }
 
@@ -1256,7 +1289,7 @@ app.post('/api/qr_attendance', loginRequired('teacher'), (req, res) => {
       today
     );
 
-    const uniqueId = `BCA-2026-${String(student.id).padStart(4, '0')}`;
+    const uniqueId = formatStudentId(student.id);
     const statusMessage =
       result.status === 'ALREADY_MARKED'
         ? `${student.name} is already marked Present today.`
@@ -1399,7 +1432,7 @@ app.get('/student_id_card/:id', loginRequired('admin'), (req, res) => {
   if (!student) {
     return res.redirect('/students_section');
   }
-  const unique_student_id = `BCA-2026-${String(student.id).padStart(4, '0')}`;
+  const unique_student_id = formatStudentId(student.id);
   const academic_session = '2026-27';
   const qr_svg = generateStudentIdQrSvg(unique_student_id);
   res.renderTemplate('student_id_card.html', {
@@ -1419,7 +1452,7 @@ app.get('/admin/student_fees/:id', loginRequired('admin'), (req, res) => {
   if (!student) {
     return res.redirect('/students_section');
   }
-  const unique_student_id = `BCA-2026-${String(student.id).padStart(4, '0')}`;
+  const unique_student_id = formatStudentId(student.id);
   let summary = {
     student_id: student.id,
     total_fee: 0,
@@ -1540,7 +1573,7 @@ app.get('/my_fees', (req, res) => {
   if (!student) {
     return res.redirect('/login');
   }
-  const unique_student_id = `BCA-2026-${String(student.id).padStart(4, '0')}`;
+  const unique_student_id = formatStudentId(student.id);
   let summary = {
     student_id: student.id,
     total_fee: 0,
@@ -1595,7 +1628,7 @@ app.get('/fee_receipt/:payment_id', (req, res) => {
     }
 
     const summary = db.getStudentFeeSummary(student.id);
-    const unique_student_id = `BCA-2026-${String(student.id).padStart(4, '0')}`;
+    const unique_student_id = formatStudentId(student.id);
     const academic_session = '2026-27';
 
     res.renderTemplate('fee_receipt.html', {
@@ -1855,7 +1888,7 @@ app.use((_req, res) => {
 
 if (!process.env.VERCEL) {
   app.listen(PORT, HOST, () => {
-    console.log(`Brilliance Coaching Academy server running at http://${HOST}:${PORT}`);
+    console.log(`Your Coaching Name server running at http://${HOST}:${PORT}`);
   });
 }
 

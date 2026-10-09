@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Fee Reports — Brilliance Coaching Academy</title>
+    <title>Admin Fee Reports — Your Coaching Name</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
     <style>
         .report-header {
@@ -187,7 +187,7 @@
 <div class="dashboard">
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <h2>✦ Brilliance Coaching Academy</h2>
+            <h2>✦ Your Coaching Name</h2>
             <p>Admin Panel</p>
         </div>
         <div class="sidebar-nav">
@@ -226,13 +226,13 @@
         <div class="filter-bar">
             <form method="GET" action="/admin/fee_reports" class="filter-form">
                 <div class="filter-field">
-                    <label for="search">Search Student / BCA ID / Mobile</label>
+                    <label for="search">Search Student / Student ID / Mobile</label>
                     <input
                         type="text"
                         id="search"
                         name="search"
                         value="{{ search_query }}"
-                        placeholder="🔍 Name, BCA-2026-XXXX, or mobile..."
+                        placeholder="🔍 Name, Student ID, or mobile..."
                     >
                 </div>
                 <div class="filter-field">

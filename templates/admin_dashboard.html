@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Dashboard — Brilliance Coaching Academy</title>
+<title>Admin Dashboard — Your Coaching Name</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
 <style>
     .fee-overview-section {
@@ -90,7 +90,7 @@
 <div class="dashboard">
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <h2>✦ Brilliance Coaching Academy</h2>
+            <h2>✦ Your Coaching Name</h2>
             <p>Admin Panel</p>
         </div>
         <div class="sidebar-nav">
@@ -109,7 +109,7 @@
     <main class="main">
         <div class="page-header">
             <h1>Welcome back, {{ session['username'] }} 👋</h1>
-            <p>Here's what's happening at Brilliance Coaching Academy today.</p>
+            <p>Here's what's happening at Your Coaching Name today.</p>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
