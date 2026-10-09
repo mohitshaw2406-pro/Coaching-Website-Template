@@ -138,16 +138,17 @@ async function uploadStudentPhotoToCloudinary(file: Express.Multer.File): Promis
   const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
   const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
 
+  const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+
   if (!cloudName || !apiKey || !apiSecret) {
-    throw new Error('Cloudinary environment variables are not configured ❌');
+    // Graceful fallback to data URI when Cloudinary is not configured
+    return dataUri;
   }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const folder = 'brilliance_students';
   const paramsToSign = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
   const signature = crypto.createHash('sha1').update(paramsToSign).digest('hex');
-
-  const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
   const body = new URLSearchParams({
     file: dataUri,
     api_key: apiKey,
@@ -188,7 +189,9 @@ async function uploadNoteToCloudinary(file: Express.Multer.File): Promise<string
   const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
 
   if (!cloudName || !apiKey || !apiSecret) {
-    throw new Error('Cloudinary environment variables are not configured ❌');
+    // Graceful fallback: return data URI so the file is stored and downloadable
+    const base64 = file.buffer ? file.buffer.toString('base64') : '';
+    return `data:${file.mimetype || 'application/octet-stream'};base64,${base64}`;
   }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();

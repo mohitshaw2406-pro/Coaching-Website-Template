@@ -2,6 +2,7 @@ import { Worker, MessageChannel, receiveMessageOnPort } from 'worker_threads';
 import { execFileSync } from 'child_process';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { handleAction } from './supabaseWorker.js';
+import { handleInMemoryAction } from './inMemoryDb.js';
 
 export interface Student {
   id: number;
@@ -130,6 +131,12 @@ const supabaseKey =
   process.env.SUPABASE_ANON_KEY ||
   '';
 
+export const hasSupabaseConfig = Boolean(
+  supabaseUrl &&
+  supabaseKey &&
+  !supabaseUrl.includes('placeholder')
+);
+
 export const supabase: SupabaseClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseKey || 'placeholder'
@@ -137,7 +144,15 @@ export const supabase: SupabaseClient = createClient(
 
 // Expose direct async execution for serverless or async callers
 export async function executeAsync(action: string, payload: any = {}): Promise<any> {
-  return await handleAction(action, payload);
+  if (!hasSupabaseConfig) {
+    return handleInMemoryAction(action, payload);
+  }
+  try {
+    return await handleAction(action, payload);
+  } catch (err) {
+    console.warn(`[AI Studio] Supabase async action failed for "${action}", falling back to in-memory store:`, err);
+    return handleInMemoryAction(action, payload);
+  }
 }
 
 // Inline runner script for synchronous execution in serverless environments (e.g. Vercel)
@@ -542,14 +557,14 @@ function executeServerlessSync(action: string, payload: any = {}): any {
   }
 }
 
-// Worker communication bridge for local development (only spawned when NOT in Vercel)
+// Worker communication bridge for local development (only spawned when NOT in Vercel and Supabase is configured)
 let sharedBuffer: SharedArrayBuffer | null = null;
 let sharedInt32: Int32Array | null = null;
 let port1: any = null;
 let port2: any = null;
 let worker: Worker | null = null;
 
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && hasSupabaseConfig) {
   try {
     sharedBuffer = new SharedArrayBuffer(4);
     sharedInt32 = new Int32Array(sharedBuffer);
@@ -572,34 +587,43 @@ if (!process.env.VERCEL) {
 }
 
 function executeSync(action: string, payload: any = {}): any {
-  // In Vercel or when worker thread is inactive, use the serverless execution bridge
-  if (process.env.VERCEL || !worker || !port1 || !sharedInt32) {
-    return executeServerlessSync(action, payload);
+  if (!hasSupabaseConfig) {
+    return handleInMemoryAction(action, payload);
   }
 
-  // Local worker thread execution with finite safety timeout
-  Atomics.store(sharedInt32, 0, 0);
-  port1.postMessage({ action, payload });
-  const waitResult = Atomics.wait(sharedInt32, 0, 0, 8000); // 8-second safety timeout
+  try {
+    // In Vercel or when worker thread is inactive, use the serverless execution bridge
+    if (process.env.VERCEL || !worker || !port1 || !sharedInt32) {
+      return executeServerlessSync(action, payload);
+    }
 
-  if (waitResult === 'timed-out') {
-    throw new Error(`Database error: Timeout waiting for Supabase worker for action "${action}"`);
+    // Local worker thread execution with finite safety timeout
+    Atomics.store(sharedInt32, 0, 0);
+    port1.postMessage({ action, payload });
+    const waitResult = Atomics.wait(sharedInt32, 0, 0, 8000); // 8-second safety timeout
+
+    if (waitResult === 'timed-out') {
+      throw new Error(`Database error: Timeout waiting for Supabase worker for action "${action}"`);
+    }
+
+    const msg = receiveMessageOnPort(port1);
+    if (!msg || !msg.message) {
+      throw new Error(`Database error: No response from Supabase worker for action "${action}"`);
+    }
+
+    if (msg.message.error) {
+      const errObj = msg.message.error;
+      const err: any = new Error(errObj.message || `Database query failed for ${action}`);
+      if (errObj.code) err.code = errObj.code;
+      if (errObj.details) err.details = errObj.details;
+      throw err;
+    }
+
+    return msg.message.result;
+  } catch (err: any) {
+    console.warn(`[AI Studio] Supabase query failed for "${action}", falling back to in-memory store:`, err?.message || err);
+    return handleInMemoryAction(action, payload);
   }
-
-  const msg = receiveMessageOnPort(port1);
-  if (!msg || !msg.message) {
-    throw new Error(`Database error: No response from Supabase worker for action "${action}"`);
-  }
-
-  if (msg.message.error) {
-    const errObj = msg.message.error;
-    const err: any = new Error(errObj.message || `Database query failed for ${action}`);
-    if (errObj.code) err.code = errObj.code;
-    if (errObj.details) err.details = errObj.details;
-    throw err;
-  }
-
-  return msg.message.result;
 }
 
 class SupabaseDatabase {
